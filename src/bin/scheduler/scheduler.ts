@@ -94,9 +94,17 @@ async function bootstrap(): Promise<void> {
 
     app.enableShutdownHooks();
 
+    await app.init();
+
     // Traffic collection and hash-maintenance sync run in this process.
-    const axiosService = app.get(AxiosService);
-    await axiosService.setJwt();
+    // Must run after init() so GetNodeJwtCommand handlers are registered;
+    // a failure must not prevent the scheduler from listening.
+    try {
+        const axiosService = app.get(AxiosService);
+        await axiosService.setJwt();
+    } catch (error) {
+        logger.error(`Failed to init node mTLS in the scheduler process: ${error}`);
+    }
 
     await app.listen(config.getOrThrow('METRICS_PORT'));
 

@@ -85,10 +85,18 @@ async function bootstrap(): Promise<void> {
 
     app.enableShutdownHooks();
 
+    await app.init();
+
     // qWDTT talks to remnanode from the REST process (status, on-demand sync).
     // Official Xray control is queued to work-0, which already calls setJwt().
-    const axiosService = app.get(AxiosService);
-    await axiosService.setJwt();
+    // Must run after init() so GetNodeJwtCommand handlers are registered;
+    // a failure must not prevent the API from listening.
+    try {
+        const axiosService = app.get(AxiosService);
+        await axiosService.setJwt();
+    } catch (error) {
+        logger.error(`Failed to init node mTLS in the REST process: ${error}`);
+    }
 
     await app.listen(Number(config.getOrThrow('APP_PORT')));
 
