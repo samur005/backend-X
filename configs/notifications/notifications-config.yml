@@ -270,7 +270,7 @@ events:
   # TORRENT BLOCKER EVENTS
   # ════════════════════════════════════════════════════════════════════════════
 
-  # Triggered when a torrent blocker report is collected from Remnawave Node
+  # Triggered when a torrent blocker report is collected from Remnawave X Node
   torrent_blocker.report:
     telegram: true
     webhook: true

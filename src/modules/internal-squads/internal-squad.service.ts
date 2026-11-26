@@ -3,7 +3,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import dayjs from 'dayjs';
 
 import { Injectable, Logger } from '@nestjs/common';
-import { EventBus, QueryBus } from '@nestjs/cqrs';
+import { CommandBus, EventBus, QueryBus } from '@nestjs/cqrs';
 
 import { fail, ok, TResult } from '@common/types';
 import { getDateRangeArrayUtil } from '@common/utils/get-date-range-array.util';
@@ -11,6 +11,8 @@ import { ERRORS } from '@libs/contracts/constants/errors';
 
 import { AddUsersToNodeEvent } from '@modules/nodes/events/add-users-to-node';
 import { ValidateUserIdsQuery } from '@modules/users/queries/validate-user-ids';
+
+import { SyncQwdttSquadAccessCommand } from '@modules/qwdtt/commands/sync-qwdtt-squad-access.command';
 
 import { NodesQueuesService } from '@queue/_nodes';
 import { SquadsQueueService } from '@queue/_squads';
@@ -40,7 +42,16 @@ export class InternalSquadService {
         private readonly squadsQueueService: SquadsQueueService,
         private readonly eventBus: EventBus,
         private readonly queryBus: QueryBus,
+        private readonly commandBus: CommandBus,
     ) {}
+
+    private async syncQwdttSquadAccess(): Promise<void> {
+        try {
+            await this.commandBus.execute(new SyncQwdttSquadAccessCommand());
+        } catch (error) {
+            this.logger.error(error);
+        }
+    }
 
     public async getInternalSquads(): Promise<TResult<GetInternalSquadsResponseModel>> {
         try {
@@ -73,6 +84,7 @@ export class InternalSquadService {
     public async createInternalSquad(
         name: string,
         inbounds: string[],
+        includeQwdtt = false,
     ): Promise<TResult<GetInternalSquadByUuidResponseModel>> {
         try {
             if (name === 'Default-Squad') {
@@ -82,7 +94,10 @@ export class InternalSquadService {
             const internalSquad = await this.internalSquadRepository.createWithInbounds(
                 name,
                 inbounds,
+                includeQwdtt,
             );
+
+            await this.syncQwdttSquadAccess();
 
             return await this.getInternalSquadByUuid(internalSquad.uuid);
         } catch (error) {
@@ -107,6 +122,7 @@ export class InternalSquadService {
         uuid: string,
         name?: string,
         inbounds?: string[],
+        includeQwdtt?: boolean,
     ): Promise<TResult<GetInternalSquadByUuidResponseModel>> {
         try {
             const internalSquad = await this.internalSquadRepository.findByUUID(uuid);
@@ -115,14 +131,15 @@ export class InternalSquadService {
                 return fail(ERRORS.INTERNAL_SQUAD_NOT_FOUND);
             }
 
-            if (!name && !inbounds) {
+            if (!name && inbounds === undefined && includeQwdtt === undefined) {
                 return fail(ERRORS.NAME_OR_INBOUNDS_REQUIRED);
             }
 
-            if (name) {
+            if (name || includeQwdtt !== undefined) {
                 await this.internalSquadRepository.update({
                     uuid,
-                    name,
+                    ...(name ? { name } : {}),
+                    ...(includeQwdtt !== undefined ? { includeQwdtt } : {}),
                 });
             }
 
@@ -186,6 +203,8 @@ export class InternalSquadService {
                     );
                 }
             }
+
+            await this.syncQwdttSquadAccess();
 
             return await this.getInternalSquadByUuid(internalSquad.uuid);
         } catch (error) {

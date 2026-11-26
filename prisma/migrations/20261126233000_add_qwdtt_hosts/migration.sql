@@ -1,0 +1,1 @@
+ALTER TABLE "hosts" ADD COLUMN "is_qwdtt" BOOLEAN NOT NULL DEFAULT false;

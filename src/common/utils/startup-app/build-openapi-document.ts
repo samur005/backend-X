@@ -25,7 +25,7 @@ import {
 } from './extra-models';
 
 const description = `
-Remnawave is a powerful proxy management tool, built on top of Xray-core, with a focus on simplicity and ease of use.
+Remnawave X is a powerful proxy management tool, built on top of Xray-core, with a focus on simplicity and ease of use.
 
 ## Resources
 * https://t.me/remnawave
@@ -39,7 +39,7 @@ export async function createOpenApiDocumentFactory(
     const pkg = await readPackageJSON();
 
     const configSwagger = new DocumentBuilder()
-        .setTitle(`Remnawave API v${pkg.version}`)
+        .setTitle(`Remnawave X API v${pkg.version}`)
         .addBearerAuth(
             {
                 type: 'http',

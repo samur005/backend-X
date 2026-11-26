@@ -18,6 +18,7 @@ import * as winston from 'winston';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 
+import { AxiosService } from '@common/axios';
 import { TypedConfigService } from '@common/config/app-config/typed-config.service';
 import { customLogFilter } from '@common/utils/filter-logs';
 import { getDocs, isDevOrDebugLogsEnabled } from '@common/utils/startup-app';
@@ -83,6 +84,19 @@ async function bootstrap(): Promise<void> {
     // app.useGlobalFilters(new CatchAllExceptionFilter());
 
     app.enableShutdownHooks();
+
+    await app.init();
+
+    // qWDTT talks to remnanode from the REST process (status, on-demand sync).
+    // Official Xray control is queued to work-0, which already calls setJwt().
+    // Must run after init() so GetNodeJwtCommand handlers are registered;
+    // a failure must not prevent the API from listening.
+    try {
+        const axiosService = app.get(AxiosService);
+        await axiosService.setJwt();
+    } catch (error) {
+        logger.error(`Failed to init node mTLS in the REST process: ${error}`);
+    }
 
     await app.listen(Number(config.getOrThrow('APP_PORT')));
 

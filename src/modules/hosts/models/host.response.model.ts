@@ -46,6 +46,8 @@ export class HostResponseModel {
         configProfileInboundUuid: string | null;
     };
 
+    public isQwdtt: boolean;
+
     public nodes: string[];
 
     public xrayJsonTemplateUuid: string | null;
@@ -94,6 +96,7 @@ export class HostResponseModel {
             configProfileUuid: data.configProfileUuid,
             configProfileInboundUuid: data.configProfileInboundUuid,
         };
+        this.isQwdtt = Boolean(data.isQwdtt);
 
         this.nodes = data.nodes.map((node) => node.nodeUuid);
         this.internalSquads = {

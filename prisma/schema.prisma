@@ -76,6 +76,7 @@ model Users {
   userMetas                      UserMeta[]
   torrentBlockerReports          TorrentBlockerReports[]
   traffic                        UserTraffic?
+  qwdttAccess                    QwdttUsers?
 
   externalSquad ExternalSquads? @relation(fields: [externalSquadUuid], references: [uuid], onDelete: SetNull)
 
@@ -304,6 +305,10 @@ model Hosts {
   configProfileUuid        String? @map("config_profile_uuid") @db.Uuid
   configProfileInboundUuid String? @map("config_profile_inbound_uuid") @db.Uuid
 
+  // qWDTT is not an Xray inbound. A host with this flag is a subscription face
+  // (remark/location + public peer) bound to a node via HostsToNodes.
+  isQwdtt Boolean @default(false) @map("is_qwdtt")
+
   configProfileInbounds ConfigProfileInbounds? @relation(fields: [configProfileInboundUuid], references: [uuid], onDelete: SetNull)
   configProfiles        ConfigProfiles?        @relation(fields: [configProfileUuid], references: [uuid], onDelete: SetNull)
   xrayJsonTemplate      SubscriptionTemplate?  @relation(fields: [xrayJsonTemplateUuid], references: [uuid], onDelete: SetNull)
@@ -384,6 +389,7 @@ model InternalSquads {
   viewPosition Int      @default(autoincrement()) @map("view_position")
   name         String   @unique @map("name")
   tags         String[] @default([]) @map("tags")
+  includeQwdtt Boolean  @default(false) @map("include_qwdtt")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
@@ -664,4 +670,60 @@ model TorrentBlockerReports {
   node Nodes @relation(fields: [nodeId], references: [id], onDelete: Cascade)
 
   @@map("torrent_blocker_reports")
+}
+
+model QwdttSettings {
+  id Int @id @default(1)
+
+  enabled Boolean @default(false)
+  remark  String  @default("qWDTT")
+
+  listenAddr   String @default("0.0.0.0:56000") @map("listen_addr")
+  wgPort       Int    @default(56001) @map("wg_port")
+  dns          String @default("8.8.8.8")
+  listenRaw    String @default("0.0.0.0:56003") @map("listen_raw")
+  listenDirect String @default("") @map("listen_direct")
+
+  subHost    String @default("") @map("sub_host")
+  vkHashes   String @default("") @map("vk_hashes")
+  clientPort Int    @default(9000) @map("client_port")
+  workers    Int    @default(16)
+
+  autoVkHash Boolean @default(true) @map("auto_vk_hash")
+
+  // Sidecar owner password, never shown in the UI or share links.
+  mainPassword String @default("") @map("main_password")
+
+  vkCookies String @default("") @map("vk_cookies")
+  /// JSON list of VK calls the panel created (CreatedCall[]).
+  vkCalls   String @default("") @map("vk_calls")
+
+  remoteWdttUrl        String @default("") @map("remote_wdtt_url")
+  remoteWdttCookie     String @default("") @map("remote_wdtt_cookie")
+  remoteWdttCsrfToken  String @default("") @map("remote_wdtt_csrf_token")
+
+  nodeUuids String[] @default([]) @map("node_uuids") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("qwdtt_settings")
+}
+
+model QwdttUsers {
+  userId BigInt @id @map("user_id")
+
+  enabled          Boolean @default(true)
+  grantedManually  Boolean @default(true) @map("granted_manually")
+  password String
+
+  reportedUpBytes   BigInt @default(0) @map("reported_up_bytes")
+  reportedDownBytes BigInt @default(0) @map("reported_down_bytes")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("qwdtt_users")
 }

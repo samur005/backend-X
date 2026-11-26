@@ -22,11 +22,15 @@ export namespace CreateHostCommand {
         { scope: 'create', kind: 'write' },
     );
 
-    export const RequestBodySchema = z.object({
-        inbound: z.object({
-            configProfileUuid: z.uuid(),
-            configProfileInboundUuid: z.uuid(),
-        }),
+    export const RequestBodySchema = z
+        .object({
+        inbound: z
+            .object({
+                configProfileUuid: z.uuid(),
+                configProfileInboundUuid: z.uuid(),
+            })
+            .optional(),
+        isQwdtt: z.optional(z.boolean().default(false)),
         remark: z.string().min(1).max(100),
 
         address: z.string(),
@@ -74,6 +78,25 @@ export namespace CreateHostCommand {
         mapper: HostMapperSchema.optional(),
         includeInSrrRules: z.optional(z.array(z.string())),
         internalSquads: HostInternalSquadsSchema.optional(),
+    })
+    .superRefine((value, ctx) => {
+        if (value.isQwdtt) {
+            if (!value.nodes || value.nodes.length !== 1) {
+                ctx.addIssue({
+                    code: 'custom',
+                    message: 'A qWDTT host must be bound to exactly one node',
+                    path: ['nodes'],
+                });
+            }
+            return;
+        }
+        if (!value.inbound?.configProfileUuid || !value.inbound.configProfileInboundUuid) {
+            ctx.addIssue({
+                code: 'custom',
+                message: 'Config profile inbound is required',
+                path: ['inbound'],
+            });
+        }
     });
 
     export const ResponseSchema = HostResponseSchema;

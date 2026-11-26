@@ -16,6 +16,7 @@ import * as winston from 'winston';
 
 import { NestFactory } from '@nestjs/core';
 
+import { AxiosService } from '@common/axios';
 import { TypedConfigService } from '@common/config/app-config';
 import { NotFoundExceptionFilter } from '@common/exception/not-found-exception.filter';
 import { WorkerRoutesGuard } from '@common/guards/worker-routes/worker-routes.guard';
@@ -92,6 +93,18 @@ async function bootstrap(): Promise<void> {
     );
 
     app.enableShutdownHooks();
+
+    await app.init();
+
+    // Traffic collection and hash-maintenance sync run in this process.
+    // Must run after init() so GetNodeJwtCommand handlers are registered;
+    // a failure must not prevent the scheduler from listening.
+    try {
+        const axiosService = app.get(AxiosService);
+        await axiosService.setJwt();
+    } catch (error) {
+        logger.error(`Failed to init node mTLS in the scheduler process: ${error}`);
+    }
 
     await app.listen(config.getOrThrow('METRICS_PORT'));
 

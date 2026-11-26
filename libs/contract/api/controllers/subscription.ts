@@ -3,4 +3,5 @@ export const SUBSCRIPTION_CONTROLLER = 'sub' as const;
 export const SUBSCRIPTION_ROUTES = {
     GET: '',
     GET_INFO: (shortUuid: string) => `${shortUuid}/info`,
+    GET_QWDTT: (shortUuid: string) => `${shortUuid}/qwdtt`,
 } as const;

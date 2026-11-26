@@ -5,6 +5,7 @@ export class InternalSquadEntity implements InternalSquads {
     public viewPosition: number;
     public name: string;
     public tags: string[];
+    public includeQwdtt: boolean;
 
     public createdAt: Date;
     public updatedAt: Date;

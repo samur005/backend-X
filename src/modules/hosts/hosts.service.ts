@@ -9,6 +9,7 @@ import { nullifyEmpty } from '@common/utils/convert-type';
 import { ERRORS } from '@libs/contracts/constants';
 
 import { GetConfigProfileByUuidQuery } from '@modules/config-profiles/queries/get-config-profile-by-uuid';
+import { isPrivateOrLocalPeerHost } from '@modules/qwdtt/qwdtt-links';
 import { GetSubscriptionTemplateByUuidQuery } from '@modules/subscription-template/queries/get-template-by-uuid';
 
 import {
@@ -55,30 +56,53 @@ export class HostsService {
                 ...rest
             } = dto;
 
-            const configProfile = await this.queryBus.execute(
-                new GetConfigProfileByUuidQuery(inboundObj.configProfileUuid),
-            );
+            const isQwdtt = Boolean(dto.isQwdtt);
+            let configProfileUuid: string | null = null;
+            let configProfileInboundUuid: string | null = null;
 
-            if (!configProfile.isOk) {
-                return fail(ERRORS.CONFIG_PROFILE_NOT_FOUND);
-            }
+            if (isQwdtt) {
+                if (!nodes || nodes.length !== 1) {
+                    return fail(ERRORS.QWDTT_HOST_NODE_REQUIRED);
+                }
+                const address = dto.address.trim();
+                if (
+                    (address && isPrivateOrLocalPeerHost(address)) ||
+                    (address !== '' && isPrivateOrLocalPeerHost(`${address}:${dto.port}`))
+                ) {
+                    return fail(ERRORS.QWDTT_HOST_PRIVATE_PEER);
+                }
+            } else {
+                if (!inboundObj) {
+                    return fail(ERRORS.CONFIG_PROFILE_INBOUND_NOT_FOUND_IN_SPECIFIED_PROFILE);
+                }
+                const configProfile = await this.queryBus.execute(
+                    new GetConfigProfileByUuidQuery(inboundObj.configProfileUuid),
+                );
 
-            const configProfileInbound = configProfile.response.inbounds.find(
-                (inbound) => inbound.uuid === inboundObj.configProfileInboundUuid,
-            );
-            if (!configProfileInbound) {
-                return fail(ERRORS.CONFIG_PROFILE_INBOUND_NOT_FOUND_IN_SPECIFIED_PROFILE);
+                if (!configProfile.isOk) {
+                    return fail(ERRORS.CONFIG_PROFILE_NOT_FOUND);
+                }
+
+                const configProfileInbound = configProfile.response.inbounds.find(
+                    (inbound) => inbound.uuid === inboundObj.configProfileInboundUuid,
+                );
+                if (!configProfileInbound) {
+                    return fail(ERRORS.CONFIG_PROFILE_INBOUND_NOT_FOUND_IN_SPECIFIED_PROFILE);
+                }
+                configProfileUuid = configProfile.response.uuid;
+                configProfileInboundUuid = configProfileInbound.uuid;
             }
 
             const hostEntity = new HostsEntity({
                 ...rest,
                 address: dto.address.trim(),
+                isQwdtt,
                 xhttpExtraParams: nullifyEmpty(xhttpExtraParams),
                 muxParams: nullifyEmpty(muxParams),
                 sockoptParams: nullifyEmpty(sockoptParams),
                 finalMask: nullifyEmpty(finalMask),
-                configProfileUuid: configProfile.response.uuid,
-                configProfileInboundUuid: configProfileInbound.uuid,
+                configProfileUuid,
+                configProfileInboundUuid,
                 internalSquadsMode: internalSquads?.mode,
             });
 
@@ -187,9 +211,26 @@ export class HostsService {
                 finalMask = undefined;
             }
 
-            let configProfileUuid: string | undefined;
-            let configProfileInboundUuid: string | undefined;
-            if (inboundObj) {
+            const isQwdtt = dto.isQwdtt ?? host.isQwdtt;
+            let configProfileUuid: string | null | undefined;
+            let configProfileInboundUuid: string | null | undefined;
+
+            if (isQwdtt) {
+                const nextNodes = nodes ?? host.nodes.map((node) => node.nodeUuid);
+                if (nextNodes.length !== 1) {
+                    return fail(ERRORS.QWDTT_HOST_NODE_REQUIRED);
+                }
+                const address = (dto.address ?? host.address).trim();
+                const port = dto.port ?? host.port;
+                if (
+                    (address && isPrivateOrLocalPeerHost(address)) ||
+                    (address !== '' && isPrivateOrLocalPeerHost(`${address}:${port}`))
+                ) {
+                    return fail(ERRORS.QWDTT_HOST_PRIVATE_PEER);
+                }
+                configProfileUuid = null;
+                configProfileInboundUuid = null;
+            } else if (inboundObj) {
                 const configProfile = await this.queryBus.execute(
                     new GetConfigProfileByUuidQuery(inboundObj.configProfileUuid),
                 );
@@ -226,6 +267,7 @@ export class HostsService {
             const result = await this.hostsRepository.update({
                 ...rest,
                 address: dto.address ? dto.address.trim() : undefined,
+                isQwdtt,
                 xhttpExtraParams,
                 muxParams,
                 sockoptParams,

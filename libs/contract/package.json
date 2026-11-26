@@ -1,17 +1,17 @@
 {
   "name": "@remnawave/backend-contract",
-  "version": "3.4.17",
-  "description": "A contract library for Remnawave Backend. It can be used in backend and frontend.",
+  "version": "3.4.17-x.1",
+  "description": "A contract library for Remnawave X Backend. It can be used in backend and frontend.",
   "keywords": [],
   "homepage": "https://github.com/remnawave",
   "bugs": {
-    "url": "https://github.com/remnawave/backend/issues"
+    "url": "https://github.com/samur005/backend-X/issues"
   },
   "license": "AGPL-3.0-only",
   "author": "REMNAWAVE <github.com/remnawave>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/remnawave/backend.git"
+    "url": "git+https://github.com/samur005/backend-X.git"
   },
   "files": [
     "build/**/*"

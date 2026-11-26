@@ -145,6 +145,7 @@ export class InternalSquadController {
         const result = await this.internalSquadService.createInternalSquad(
             createInternalSquadDto.name,
             createInternalSquadDto.inbounds,
+            createInternalSquadDto.includeQwdtt,
         );
 
         const data = errorHandler(result);
@@ -201,6 +202,7 @@ export class InternalSquadController {
             body.uuid,
             body.name,
             body.inbounds,
+            body.includeQwdtt,
         );
 
         const data = errorHandler(result);

@@ -103,7 +103,7 @@ export const CONTROLLERS_INFO = {
     },
     KEYGEN: {
         tag: 'Keygen Controller',
-        description: 'Generation of SECRET_KEY for Remnawave Node.',
+        description: 'Generation of SECRET_KEY for Remnawave X Node.',
         resource: 'keygen',
     },
     SUBSCRIPTION_REQUEST_HISTORY: {
@@ -117,7 +117,7 @@ export const CONTROLLERS_INFO = {
         resource: 'snippets',
     },
     REMNAAWAVE_SETTINGS: {
-        tag: 'Remnawave Settings Controller',
+        tag: 'Remnawave X Settings Controller',
         description: '',
         resource: 'remnawave-settings',
     },
@@ -146,5 +146,10 @@ export const CONTROLLERS_INFO = {
         description:
             "Manage API tokens to use in your code. This controller can't be used with API token, only with Admin JWT token",
         resource: 'api-tokens',
+    },
+    QWDTT: {
+        tag: 'qWDTT Controller',
+        description: 'Manage the qWDTT sidecar, VK hashes and user access.',
+        resource: 'qwdtt',
     },
 } as const;

@@ -1324,7 +1324,7 @@ export class UsersRepository {
                     'internalSquads.uuid',
                     'internalSquadMembers.internalSquadUuid',
                 )
-                .select(['internalSquads.uuid', 'internalSquads.name'])
+                .select(['internalSquads.uuid', 'internalSquads.name', 'internalSquads.includeQwdtt'])
                 .whereRef('internalSquadMembers.userId', '=', 'users.id'),
         ).as('activeInternalSquads');
     }

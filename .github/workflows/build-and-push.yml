@@ -15,6 +15,7 @@ jobs:
   send-tg-msg:
     name: Send TG message
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.ref_name, '-x.') }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v7
@@ -32,6 +33,7 @@ jobs:
   build-docker-images:
     name: Build ${{ matrix.platform }}
     runs-on: ${{ matrix.runner }}
+    if: ${{ !contains(github.ref_name, '-x.') }}
     strategy:
       fail-fast: false
       matrix:
@@ -107,6 +109,7 @@ jobs:
     name: Merge & push manifests
     needs: [build-docker-images]
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.ref_name, '-x.') }}
     steps:
       - name: Download digests
         uses: actions/download-artifact@v4
@@ -154,6 +157,7 @@ jobs:
   create-release:
     needs: [merge]
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.ref_name, '-x.') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -212,6 +216,7 @@ jobs:
     name: Send TG message
     needs: [merge, create-release]
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.ref_name, '-x.') }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v7
@@ -229,7 +234,7 @@ jobs:
   notify-on-error:
     runs-on: ubuntu-latest
     needs: [build-docker-images, merge, create-release]
-    if: failure()
+    if: ${{ failure() && !contains(github.ref_name, '-x.') }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v7

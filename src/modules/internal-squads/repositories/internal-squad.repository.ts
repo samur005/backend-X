@@ -35,10 +35,12 @@ export class InternalSquadRepository implements ICrud<InternalSquadEntity> {
     public async createWithInbounds(
         name: string,
         inbounds: string[],
+        includeQwdtt = false,
     ): Promise<InternalSquadEntity> {
         const result = await this.prisma.tx.internalSquads.create({
             data: {
                 name,
+                includeQwdtt,
                 internalSquadInbounds: {
                     create: inbounds.map((inbound) => ({ inboundUuid: inbound })),
                 },
@@ -108,6 +110,7 @@ export class InternalSquadRepository implements ICrud<InternalSquadEntity> {
                 'internalSquads.viewPosition',
                 'internalSquads.name',
                 'internalSquads.tags',
+                'internalSquads.includeQwdtt',
                 'internalSquads.createdAt',
                 'internalSquads.updatedAt',
 
@@ -182,6 +185,7 @@ export class InternalSquadRepository implements ICrud<InternalSquadEntity> {
                 'internalSquads.viewPosition',
                 'internalSquads.name',
                 'internalSquads.tags',
+                'internalSquads.includeQwdtt',
                 'internalSquads.createdAt',
                 'internalSquads.updatedAt',
 

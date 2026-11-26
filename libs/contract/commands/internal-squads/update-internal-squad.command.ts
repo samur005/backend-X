@@ -27,6 +27,7 @@ export namespace UpdateInternalSquadCommand {
             )
             .optional(),
         inbounds: z.array(z.uuid()).optional(),
+        includeQwdtt: z.boolean().optional(),
     });
 
     export const ResponseSchema = z.object({

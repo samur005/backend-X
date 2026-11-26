@@ -46,6 +46,13 @@ import { GetNodeJwtCommand } from '@modules/keygen/commands/get-node-jwt';
 import { fail, ok, TResult } from '../types';
 import { INodeConnectionOpts, INodeRequestOpts, IMtlsOptions } from './axios.interfaces';
 import { MtlsSocksProxyAgent } from './mtls-agent';
+import {
+    INodeQwdttStatusResponse,
+    INodeQwdttSyncRequest,
+    INodeQwdttSyncResponse,
+    INodeQwdttTrafficResponse,
+    NODE_QWDTT_ROUTES,
+} from './qwdtt-node.contract';
 
 const EMPTY_BODY: Readonly<Record<string, never>> = {};
 const MAX_NODE_ERROR_LENGTH = 2000;
@@ -527,6 +534,50 @@ export class AxiosService {
             path: RecreateTablesCommand.url,
             opts,
             timeout: 10_000,
+        });
+    }
+
+
+    /*
+     * QWDTT SIDECAR
+     */
+
+    public async syncQwdtt(
+        data: INodeQwdttSyncRequest,
+        opts: INodeConnectionOpts,
+    ): Promise<TResult<INodeQwdttSyncResponse>> {
+        return this.request<{ response: INodeQwdttSyncResponse }>({
+            label: 'SYNC QWDTT',
+            path: NODE_QWDTT_ROUTES.SYNC,
+            opts,
+            data,
+            timeout: 30_000,
+        });
+    }
+
+    public async getQwdttStatus(
+        opts: INodeConnectionOpts,
+    ): Promise<TResult<INodeQwdttStatusResponse>> {
+        return this.request<{ response: INodeQwdttStatusResponse }>({
+            label: 'GET QWDTT STATUS',
+            path: NODE_QWDTT_ROUTES.STATUS,
+            opts,
+            method: 'get',
+            logAxiosError: false,
+            timeout: 15_000,
+        });
+    }
+
+    public async getQwdttTraffic(
+        opts: INodeConnectionOpts,
+    ): Promise<TResult<INodeQwdttTrafficResponse>> {
+        return this.request<{ response: INodeQwdttTrafficResponse }>({
+            label: 'GET QWDTT TRAFFIC',
+            path: NODE_QWDTT_ROUTES.TRAFFIC,
+            opts,
+            method: 'get',
+            logAxiosError: false,
+            timeout: 15_000,
         });
     }
 
