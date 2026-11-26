@@ -10,7 +10,7 @@ The sidecar binary is [SpaceNeuroX/proxy-turn-vk-android](https://github.com/Spa
 
 Images (never `remnawave/*`):
 
-- `ghcr.io/samur005/backend-x:<upstream>-x.<n>` (example `3.4.11-x.8`)
+- `ghcr.io/samur005/backend-x:<upstream>-x.<n>` (example `3.4.11-x.9`)
 - `ghcr.io/samur005/node-x:<upstream>-x.<n>` (example `3.4.6-x.1`)
 - Frontend is not a separate image: a zip built from `frontend-X` is baked into
   the backend image through `FRONTEND_URL`.
