@@ -10,12 +10,12 @@ The sidecar binary is [SpaceNeuroX/proxy-turn-vk-android](https://github.com/Spa
 
 Images (never `remnawave/*`):
 
-- `ghcr.io/samur005/backend-x:<upstream>-x.<n>` (example `3.4.11-x.2`)
+- `ghcr.io/samur005/backend-x:<upstream>-x.<n>` (example `3.4.11-x.7`)
 - `ghcr.io/samur005/node-x:<upstream>-x.<n>` (example `3.4.6-x.1`)
 - Frontend is not a separate image: a zip built from `frontend-X` is baked into
   the backend image through `FRONTEND_URL`.
-- Pinned frontend zip (tag `3.4.11-x.2` on `frontend-X`, not `main`):
-  `https://github.com/samur005/frontend-X/releases/download/3.4.11-x.2/remnawave-frontend.zip`
+- Pinned frontend zip (tag `3.4.11-x.7` on `frontend-X`, not `main`):
+  `https://github.com/samur005/frontend-X/releases/download/3.4.11-x.7/remnawave-frontend.zip`
 - Moving tags for the installer: `ghcr.io/samur005/backend-x:3`, `ghcr.io/samur005/backend-x:latest`,
   `ghcr.io/samur005/node-x:latest`.
 
