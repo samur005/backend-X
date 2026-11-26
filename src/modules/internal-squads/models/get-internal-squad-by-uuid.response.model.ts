@@ -7,6 +7,7 @@ export class GetInternalSquadByUuidResponseModel {
     public readonly viewPosition: number;
     public readonly name: string;
     public readonly tags: string[];
+    public readonly includeQwdtt: boolean;
     public readonly info: {
         membersCount: number;
         inboundsCount: number;
@@ -21,6 +22,7 @@ export class GetInternalSquadByUuidResponseModel {
         this.viewPosition = entity.viewPosition;
         this.name = entity.name;
         this.tags = entity.tags;
+        this.includeQwdtt = Boolean(entity.includeQwdtt);
         this.info = {
             membersCount: Number(entity.membersCount),
             inboundsCount: Number(entity.inboundsCount),

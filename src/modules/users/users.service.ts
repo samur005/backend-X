@@ -4,7 +4,7 @@ import { customAlphabet } from 'nanoid';
 import { randomUUID } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
-import { EventBus, QueryBus } from '@nestjs/cqrs';
+import { CommandBus, EventBus, QueryBus } from '@nestjs/cqrs';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { TypedConfigService } from '@common/config/app-config';
@@ -48,6 +48,8 @@ import {
 } from './models';
 import { UsersRepository } from './repositories/users.repository';
 
+import { SyncQwdttSquadAccessCommand } from '@modules/qwdtt/commands/sync-qwdtt-squad-access.command';
+
 @Injectable()
 export class UsersService {
     private readonly logger = new Logger(UsersService.name);
@@ -62,10 +64,19 @@ export class UsersService {
         private readonly queryBus: QueryBus,
         private readonly configService: TypedConfigService,
         private readonly usersQueuesService: UsersQueuesService,
+        private readonly commandBus: CommandBus,
     ) {
         this.shortUuidLength = this.configService.getOrThrow('SHORT_UUID_LENGTH');
         this.shortUuidMethod = this.configService.getOrThrow('SHORT_UUID_METHOD');
         this.generateShortUuid = this.createShortUuidGenerator();
+    }
+
+    private async syncQwdttSquadAccess(): Promise<void> {
+        try {
+            await this.commandBus.execute(new SyncQwdttSquadAccessCommand());
+        } catch (error) {
+            this.logger.error(error);
+        }
     }
 
     public async createUser(dto: CreateUserBodyDto): Promise<TResult<UserEntity>> {
@@ -109,6 +120,8 @@ export class UsersService {
                     event: EVENTS.USER.CREATED,
                 }),
             );
+
+            await this.syncQwdttSquadAccess();
 
             return ok(user);
         } catch (error) {
@@ -250,6 +263,8 @@ export class UsersService {
                     event: EVENTS.USER.MODIFIED,
                 }),
             );
+
+            await this.syncQwdttSquadAccess();
 
             return ok(updatedUser);
         } catch (error) {

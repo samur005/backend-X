@@ -1,5 +1,5 @@
 x-base: &base
-  image: ghcr.io/samur005/backend-x:3.4.11-x.1
+  image: ghcr.io/samur005/backend-x:3.4.11-x.2
 
 x-common: &common
   ulimits:

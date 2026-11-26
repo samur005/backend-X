@@ -1,3 +1,4 @@
+import { SyncQwdttSquadAccessCommand } from '@modules/qwdtt/commands/sync-qwdtt-squad-access.command';
 import { Job } from 'bullmq';
 
 import { Processor, WorkerHost } from '@nestjs/bullmq';
@@ -85,6 +86,7 @@ export class SquadsQueueProcessor extends WorkerHost {
             );
 
             await this.restartNodesByConfigProfiles(internalSquadUuid);
+            await this.commandBus.execute(new SyncQwdttSquadAccessCommand());
 
             return result;
         } catch (error) {
@@ -103,6 +105,7 @@ export class SquadsQueueProcessor extends WorkerHost {
             );
 
             await this.restartNodesByConfigProfiles(internalSquadUuid);
+            await this.commandBus.execute(new SyncQwdttSquadAccessCommand());
 
             return result;
         } catch (error) {

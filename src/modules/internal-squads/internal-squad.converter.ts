@@ -16,6 +16,7 @@ const entityToModel = (entity: InternalSquadEntity): InternalSquads => {
         viewPosition: entity.viewPosition,
         name: entity.name,
         tags: entity.tags,
+        includeQwdtt: entity.includeQwdtt,
         createdAt: entity.createdAt,
         updatedAt: entity.updatedAt,
     };

@@ -25,6 +25,7 @@ export namespace CreateInternalSquadCommand {
                 'Name can only contain letters, numbers, underscores, dashes and spaces',
             ),
         inbounds: z.array(z.uuid()),
+        includeQwdtt: z.boolean().optional(),
     });
 
     export const ResponseSchema = z.object({

@@ -7,6 +7,7 @@ export const InternalSquadSchema = z.object({
     viewPosition: z.int(),
     name: z.string(),
     tags: z.array(z.string()),
+    includeQwdtt: z.boolean(),
 
     info: z.object({
         membersCount: z.number(),

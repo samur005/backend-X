@@ -385,6 +385,7 @@ model InternalSquads {
   viewPosition Int      @default(autoincrement()) @map("view_position")
   name         String   @unique @map("name")
   tags         String[] @default([]) @map("tags")
+  includeQwdtt Boolean  @default(false) @map("include_qwdtt")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
@@ -708,7 +709,8 @@ model QwdttSettings {
 model QwdttUsers {
   userId BigInt @id @map("user_id")
 
-  enabled  Boolean @default(true)
+  enabled          Boolean @default(true)
+  grantedManually  Boolean @default(true) @map("granted_manually")
   password String
 
   reportedUpBytes   BigInt @default(0) @map("reported_up_bytes")

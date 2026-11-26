@@ -59,11 +59,53 @@ export class QwdttRepository {
         });
     }
 
-    public async upsertUser(userId: bigint, data: { password: string; enabled: boolean }) {
+    public async upsertUser(
+        userId: bigint,
+        data: { password: string; enabled: boolean; grantedManually?: boolean },
+    ) {
         return this.prisma.tx.qwdttUsers.upsert({
             where: { userId },
-            create: { userId, password: data.password, enabled: data.enabled },
-            update: data,
+            create: {
+                userId,
+                password: data.password,
+                enabled: data.enabled,
+                grantedManually: data.grantedManually ?? true,
+            },
+            update: {
+                password: data.password,
+                enabled: data.enabled,
+                ...(data.grantedManually !== undefined
+                    ? { grantedManually: data.grantedManually }
+                    : {}),
+            },
+            include: { user: true },
+        });
+    }
+
+    public async findPanelUserIdByShortUuid(shortUuid: string): Promise<bigint | null> {
+        const user = await this.prisma.tx.users.findUnique({
+            where: { shortUuid },
+            select: { id: true },
+        });
+        return user?.id ?? null;
+    }
+
+    public async listUserIdsInQwdttSquads(): Promise<bigint[]> {
+        const rows = await this.prisma.tx.internalSquadMembers.findMany({
+            where: {
+                internalSquad: {
+                    includeQwdtt: true,
+                },
+            },
+            select: { userId: true },
+            distinct: ['userId'],
+        });
+        return rows.map((row) => row.userId);
+    }
+
+    public async listAutoGrantedUsers(): Promise<QwdttUserWithProfile[]> {
+        return this.prisma.tx.qwdttUsers.findMany({
+            where: { grantedManually: false },
             include: { user: true },
         });
     }

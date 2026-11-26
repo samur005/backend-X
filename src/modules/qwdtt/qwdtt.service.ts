@@ -203,6 +203,7 @@ export class QwdttService {
             const row = await this.repository.upsertUser(user.id, {
                 password,
                 enabled: body.enabled ?? existing?.enabled ?? true,
+                grantedManually: true,
             });
             await this.syncAssignedNodes();
             const settings = await this.repository.getOrCreateSettings();
@@ -261,10 +262,17 @@ export class QwdttService {
             return null;
         }
         const rows = await this.repository.listUsers();
-        const row = rows.find(
-            (item) => item.user.shortUuid === shortUuid && this.userIsActive(item),
-        );
+        let row = rows.find((item) => item.user.shortUuid === shortUuid) ?? null;
         if (!row) {
+            const userId = await this.repository.findPanelUserIdByShortUuid(shortUuid);
+            if (!userId) {
+                return null;
+            }
+            row = await this.ensureSubscriptionAccess(userId);
+        } else {
+            row = await this.ensureSubscriptionAccess(row.userId, row);
+        }
+        if (!row || !this.userIsActive(row)) {
             return null;
         }
         const peer = await this.resolveHostFromNodes(settings);
@@ -290,11 +298,85 @@ export class QwdttService {
         if (!settings.enabled) {
             return '';
         }
-        const row = await this.repository.findUser(userId);
+        const row = await this.ensureSubscriptionAccess(userId);
         if (!row || !this.userIsActive(row)) {
             return '';
         }
         return await this.userLink(settings, row);
+    }
+
+    public async syncAccessFromSquads(): Promise<void> {
+        const squadUserIds = await this.repository.listUserIdsInQwdttSquads();
+        const squadSet = new Set(squadUserIds.map((id) => id.toString()));
+        const autoGranted = await this.repository.listAutoGrantedUsers();
+
+        for (const userId of squadUserIds) {
+            const existing = await this.repository.findUser(userId);
+            if (!existing) {
+                await this.repository.upsertUser(userId, {
+                    password: generatePassword(16),
+                    enabled: true,
+                    grantedManually: false,
+                });
+                continue;
+            }
+            if (!existing.grantedManually && !existing.enabled) {
+                await this.repository.upsertUser(userId, {
+                    password: existing.password,
+                    enabled: true,
+                    grantedManually: false,
+                });
+            }
+        }
+
+        for (const row of autoGranted) {
+            if (!squadSet.has(row.userId.toString()) && row.enabled) {
+                await this.repository.upsertUser(row.userId, {
+                    password: row.password,
+                    enabled: false,
+                    grantedManually: false,
+                });
+            }
+        }
+
+        await this.syncAssignedNodes();
+    }
+
+    private async userIsInQwdttSquad(userId: bigint): Promise<boolean> {
+        const ids = await this.repository.listUserIdsInQwdttSquads();
+        return ids.some((id) => id === userId);
+    }
+
+    private async ensureSubscriptionAccess(
+        userId: bigint,
+        existing?: QwdttUserWithProfile | null,
+    ): Promise<QwdttUserWithProfile | null> {
+        const row = existing ?? (await this.repository.findUser(userId));
+        const inSquad = await this.userIsInQwdttSquad(userId);
+        if (!row) {
+            if (!inSquad) {
+                return null;
+            }
+            return this.repository.upsertUser(userId, {
+                password: generatePassword(16),
+                enabled: true,
+                grantedManually: false,
+            });
+        }
+        if (row.grantedManually) {
+            return row;
+        }
+        if (inSquad) {
+            if (!row.enabled) {
+                return this.repository.upsertUser(userId, {
+                    password: row.password,
+                    enabled: true,
+                    grantedManually: false,
+                });
+            }
+            return row;
+        }
+        return null;
     }
 
     public async getNodePayload(nodeUuid: string): Promise<INodeQwdttSyncRequest | null> {
@@ -556,6 +638,7 @@ export class QwdttService {
                 nodeUuids: settings.nodeUuids,
                 remoteWdttUrl: settings.remoteWdttUrl,
                 hasRemoteWdttAuth: Boolean(settings.remoteWdttCookie),
+                vkCookies: settings.vkCookies || '',
             },
             status: {
                 hashEnv: Boolean(envHashOverride()),

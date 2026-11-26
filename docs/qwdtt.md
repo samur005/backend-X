@@ -10,12 +10,12 @@ The sidecar binary is [SpaceNeuroX/proxy-turn-vk-android](https://github.com/Spa
 
 Images (never `remnawave/*`):
 
-- `ghcr.io/samur005/backend-x:<upstream>-x.<n>` (example `3.4.11-x.1`)
+- `ghcr.io/samur005/backend-x:<upstream>-x.<n>` (example `3.4.11-x.2`)
 - `ghcr.io/samur005/node-x:<upstream>-x.<n>` (example `3.4.6-x.1`)
 - Frontend is not a separate image: a zip built from `frontend-X` is baked into
   the backend image through `FRONTEND_URL`.
-- Pinned frontend zip (tag `3.4.11-x.1` on `frontend-X`, not `main`):
-  `https://github.com/samur005/frontend-X/releases/download/3.4.11-x.1/remnawave-frontend.zip`
+- Pinned frontend zip (tag `3.4.11-x.2` on `frontend-X`, not `main`):
+  `https://github.com/samur005/frontend-X/releases/download/3.4.11-x.2/remnawave-frontend.zip`
 - Moving tags for the installer: `ghcr.io/samur005/backend-x:3`, `ghcr.io/samur005/backend-x:latest`,
   `ghcr.io/samur005/node-x:latest`.
 
@@ -101,6 +101,20 @@ in the file are preserved across writes.
 
 A random **main/owner password** is stored only on the backend and passed as
 `-password`. It is never placed in a user share link.
+
+## Internal squads
+
+qWDTT is not an Xray inbound, so it is not selected from the inbound checklist.
+An internal squad has an `includeQwdtt` flag. Members of a squad with that flag
+get qWDTT credentials and the `qwdtt://` line in the subscription. Access created
+only through a squad is revoked when the user leaves every such squad. Access
+granted manually on the qWDTT page is kept even if the user leaves the squad.
+
+## Admin cookies
+
+The admin GET view returns the stored VK cookies so the settings form can keep
+the value after Save and when the page is opened again. Do not log or print those
+values.
 
 ## Links and subscription
 
