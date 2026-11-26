@@ -11,9 +11,9 @@ permissions:
 
 env:
   GHCR_IMAGE: ghcr.io/samur005/backend-x
-  FRONTEND_URL: https://github.com/samur005/frontend-X/releases/download/3.4.11-x.7/remnawave-frontend.zip
+  FRONTEND_URL: https://github.com/samur005/frontend-X/releases/download/3.4.11-x.8/remnawave-frontend.zip
   FRONTEND_REPO: samur005/frontend-X
-  FRONTEND_TAG: 3.4.11-x.7
+  FRONTEND_TAG: 3.4.11-x.8
 
 jobs:
   build-docker-images:
