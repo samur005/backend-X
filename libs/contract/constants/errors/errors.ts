@@ -1294,4 +1294,39 @@ export const ERRORS = {
         message: 'Clone host error',
         httpCode: 500,
     },
+    QWDTT_NOT_CONFIGURED: {
+        code: 'A259',
+        message: 'qWDTT is not configured',
+        httpCode: 400,
+    },
+    GET_QWDTT_ERROR: {
+        code: 'A260',
+        message: 'Get qWDTT error',
+        httpCode: 500,
+    },
+    UPDATE_QWDTT_ERROR: {
+        code: 'A261',
+        message: 'Update qWDTT error',
+        httpCode: 500,
+    },
+    QWDTT_COOKIE_ERROR: {
+        code: 'A262',
+        message: 'qWDTT VK cookie error',
+        httpCode: 400,
+    },
+    QWDTT_HASH_ERROR: {
+        code: 'A263',
+        message: 'qWDTT hash error',
+        httpCode: 400,
+    },
+    QWDTT_USER_NOT_FOUND: {
+        code: 'A264',
+        message: 'qWDTT user not found',
+        httpCode: 404,
+    },
+    QWDTT_SYNC_ERROR: {
+        code: 'A265',
+        message: 'qWDTT node sync error',
+        httpCode: 500,
+    },
 } as const;

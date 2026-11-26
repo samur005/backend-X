@@ -15,6 +15,8 @@ import { NodeEvent } from '@integration-modules/notifications/interfaces';
 
 import { GetResolvedIntegrationsQuery } from '@modules/node-integrations/queries/get-resolved-integrations';
 import { mergeNodeIntegrations } from '@modules/node-integrations/utils';
+import { GetQwdttNodePayloadQuery } from '@modules/qwdtt/queries';
+import { QWDTT_INTEGRATION_KEY } from '@modules/qwdtt/qwdtt.service';
 import { GetPluginByUuidQuery } from '@modules/node-plugins/queries/get-plugin-by-uuid';
 import { UpdateNodeCommand } from '@modules/nodes/commands/update-node';
 import { GetNodeByUuidQuery } from '@modules/nodes/queries/get-node-by-uuid';
@@ -212,11 +214,21 @@ export class StartNodeProcessor extends WorkerHost {
                 throw new Error('Failed to resolve integrations for node');
             }
 
-            const nodeIntegrations = mergeNodeIntegrations(
+            let nodeIntegrations = mergeNodeIntegrations(
                 node.integrationUuids
                     .map((uuid) => integrationsResult.response.get(uuid))
                     .filter((integration) => integration !== undefined),
             );
+
+            const qwdttPayload = await this.queryBus.execute(
+                new GetQwdttNodePayloadQuery(node.uuid),
+            );
+            if (qwdttPayload) {
+                nodeIntegrations = {
+                    ...nodeIntegrations,
+                    [QWDTT_INTEGRATION_KEY]: qwdttPayload,
+                };
+            }
 
             const reqStartTime = getTime();
 

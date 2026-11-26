@@ -33,6 +33,7 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "check": "oxfmt --check && oxlint",
+    "test:qwdtt": "bun test src/modules/qwdtt/*.test.ts",
     "fix": "oxfmt && oxlint --fix"
   },
   "dependencies": {

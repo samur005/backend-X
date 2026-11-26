@@ -23,6 +23,7 @@ import { NodesUserUsageHistoryModule } from './nodes-user-usage-history/nodes-us
 import { NodesModule } from './nodes/nodes.module';
 import { RemnawaveServiceModule } from './remnawave-service/remnawave-service.module';
 import { RemnawaveSettingsModule } from './remnawave-settings/remnawave-settings.module';
+import { QwdttModule } from './qwdtt/qwdtt.module';
 import { SubscriptionPageConfigModule } from './subscription-page-configs/subpage-configs.module';
 import { SubscriptionResponseRulesModule } from './subscription-response-rules/subscription-response-rules.module';
 import { SubscriptionSettingsModule } from './subscription-settings/subscription-settings.module';
@@ -35,6 +36,7 @@ import { UsersModule } from './users/users.module';
 @Module({
     imports: [
         RemnawaveSettingsModule,
+        QwdttModule,
         ConditionalModule.registerWhen(AdminModule, () => isRestApi()),
         ConditionalModule.registerWhen(AuthModule, () => isRestApi()),
         ConditionalModule.registerWhen(SubscriptionPageConfigModule, () => isRestApi()),

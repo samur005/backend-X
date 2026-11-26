@@ -5,6 +5,7 @@ import { RecordUserUsageTask } from './record-user-usage/record-user-usage.task'
 import { RESET_USER_TRAFFIC_TASKS } from './reset-user-traffic-jobs';
 import { SERVICE_JOBS_TASKS } from './service';
 import { USERS_JOBS_TASKS } from './users-jobs';
+import { QwdttTask } from './qwdtt/qwdtt.task';
 
 export const ENQUEUE_SERVICES = [
     RecordUserUsageTask,
@@ -14,4 +15,5 @@ export const ENQUEUE_SERVICES = [
     ...RESET_USER_TRAFFIC_TASKS,
     ...USERS_JOBS_TASKS,
     ...SERVICE_JOBS_TASKS,
+    QwdttTask,
 ];

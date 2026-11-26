@@ -2,6 +2,8 @@ FROM alpine:3.19 AS frontend
 WORKDIR /opt/frontend
 
 ARG BRANCH=main
+# Bake a frontend-X zip through FRONTEND_URL; the default official zip has no qWDTT UI.
+# Published image name: ghcr.io/samur005/backend-x:<upstream>-x.<n> (e.g. 3.4.11-x.1)
 ARG FRONTEND_URL=https://github.com/remnawave/frontend/releases/latest/download/remnawave-frontend.zip
 ARG SINGBOX_SCHEMA_URL=https://github.com/BlackDuty/sing-box-schema/releases/download/v1.13.13/schema.json
 ARG MIHOMO_SCHEMA_URL=https://github.com/dongchengjie/meta-json-schema/releases/download/v1.19.29/meta-json-schema.json
@@ -55,10 +57,10 @@ RUN cd node_modules/@prisma/client/runtime && \
 
 FROM node:24.22-trixie-slim
 
-LABEL org.opencontainers.image.title="Remnawave"
+LABEL org.opencontainers.image.title="Remnawave Backend-X"
 LABEL org.opencontainers.image.description="Powerful proxy management tool"
-LABEL org.opencontainers.image.url="https://github.com/remnawave/backend"
-LABEL org.opencontainers.image.source="https://github.com/remnawave/backend"
+LABEL org.opencontainers.image.url="https://github.com/samur005/backend-X"
+LABEL org.opencontainers.image.source="https://github.com/samur005/backend-X"
 LABEL org.opencontainers.image.vendor="Remnawave"
 LABEL org.opencontainers.image.licenses="AGPL-3.0"
 LABEL org.opencontainers.image.documentation="https://docs.rw"

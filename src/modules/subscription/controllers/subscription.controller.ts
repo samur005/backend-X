@@ -29,6 +29,7 @@ import {
     SubscriptionRawResponse,
     SubscriptionWithConfigResponse,
 } from '../models';
+import { QwdttService } from '@modules/qwdtt/qwdtt.service';
 import { SubscriptionService } from '../subscription.service';
 
 @ApiTags(CONTROLLERS_INFO.SUBSCRIPTION.tag)
@@ -38,6 +39,7 @@ export class SubscriptionController {
     constructor(
         private readonly subscriptionService: SubscriptionService,
         private readonly responseRulesEncryptionService: ResponseRulesEncryptionService,
+        private readonly qwdttService: QwdttService,
     ) {}
 
     private async finalizeSubscriptionResponse(
@@ -81,6 +83,19 @@ export class SubscriptionController {
         return {
             response: data,
         };
+    }
+
+
+    @Get([SUBSCRIPTION_ROUTES.GET + '/:shortUuid/qwdtt'])
+    async getQwdttSubscription(
+        @Param() param: GetSubscriptionByShortUuidParamDto,
+        @Res() response: Response,
+    ): Promise<Response> {
+        const document = await this.qwdttService.getPublicDocument(param.shortUuid);
+        if (!document) {
+            return response.status(404).send('qWDTT subscription not found');
+        }
+        return response.status(200).type('application/json').send(document);
     }
 
     @Get([SUBSCRIPTION_ROUTES.GET + '/:shortUuid'])

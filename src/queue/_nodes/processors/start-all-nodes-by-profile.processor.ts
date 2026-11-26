@@ -13,6 +13,8 @@ import { CACHE_KEYS, CACHE_KEYS_TTL } from '@libs/contracts/constants';
 import { ConfigProfileInboundEntity } from '@modules/config-profiles/entities';
 import { GetResolvedIntegrationsQuery } from '@modules/node-integrations/queries/get-resolved-integrations';
 import { mergeNodeIntegrations } from '@modules/node-integrations/utils';
+import { GetQwdttNodePayloadQuery } from '@modules/qwdtt/queries';
+import { QWDTT_INTEGRATION_KEY } from '@modules/qwdtt/qwdtt.service';
 import { NodePluginEntity } from '@modules/node-plugins/entities';
 import { GetAllPluginsQuery } from '@modules/node-plugins/queries/get-all-plugins';
 import { NodesEntity } from '@modules/nodes';
@@ -189,11 +191,21 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                     throw new Error('Failed to get active node inbounds tags');
                 }
 
-                const nodeIntegrations = mergeNodeIntegrations(
+                let nodeIntegrations = mergeNodeIntegrations(
                     node.integrationUuids
                         .map((uuid) => integrationsResult.response.get(uuid))
                         .filter((integration) => integration !== undefined),
                 );
+
+                const qwdttPayload = await this.queryBus.execute(
+                    new GetQwdttNodePayloadQuery(node.uuid),
+                );
+                if (qwdttPayload) {
+                    nodeIntegrations = {
+                        ...nodeIntegrations,
+                        [QWDTT_INTEGRATION_KEY]: qwdttPayload,
+                    };
+                }
 
                 let pluginsSupported = true;
                 const xrayStatusResponse = await this.axios.getNodeHealth({

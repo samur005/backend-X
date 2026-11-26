@@ -147,4 +147,9 @@ export const CONTROLLERS_INFO = {
             "Manage API tokens to use in your code. This controller can't be used with API token, only with Admin JWT token",
         resource: 'api-tokens',
     },
+    QWDTT: {
+        tag: 'qWDTT Controller',
+        description: 'Manage the qWDTT sidecar, VK hashes and user access.',
+        resource: 'qwdtt',
+    },
 } as const;
