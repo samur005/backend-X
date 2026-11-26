@@ -4,7 +4,7 @@ WORKDIR /opt/frontend
 ARG BRANCH=main
 # Bake a frontend-X zip through FRONTEND_URL; the default official zip has no qWDTT UI.
 # Published image name: ghcr.io/samur005/backend-x:<upstream>-x.<n> (e.g. 3.4.11-x.2)
-ARG FRONTEND_URL=https://github.com/samur005/frontend-X/releases/download/3.4.11-x.2/remnawave-frontend.zip
+ARG FRONTEND_URL=https://github.com/samur005/frontend-X/releases/download/3.4.11-x.5/remnawave-frontend.zip
 ARG SINGBOX_SCHEMA_URL=https://github.com/BlackDuty/sing-box-schema/releases/download/v1.13.13/schema.json
 ARG MIHOMO_SCHEMA_URL=https://github.com/dongchengjie/meta-json-schema/releases/download/v1.19.29/meta-json-schema.json
 
