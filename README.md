@@ -1,8 +1,8 @@
-## Remnawave Backend
+## Remnawave X Backend
 
-Backend for Remnawave Panel.
+Backend for Remnawave X (a fork of Remnawave).
 
-Learn more about Remnawave Panel [here](https://docs.rw/).
+Learn more about the original Remnawave Panel [here](https://docs.rw/).
 
 # Contributors
 
@@ -11,7 +11,7 @@ We ❤️‍🔥 contributors! If you'd like to contribute, please check out our
 Check [open issues](https://github.com/remnawave/panel/issues) to help the progress of this project.
 
 <p align="center">
-Thanks to the all contributors who have helped improve Remnawave:
+Thanks to the all contributors who have helped improve Remnawave X:
 </p>
 <p align="center">
 <a href="https://github.com/remnawave/backend/graphs/contributors">

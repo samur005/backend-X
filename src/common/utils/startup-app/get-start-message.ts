@@ -8,7 +8,7 @@ export async function getStartMessage() {
     return table(
         [
             [chalk.blue('▰▱'.repeat(30))],
-            [chalk.blue(`🌊 Remnawave Backend v${pkg.version}`)],
+            [chalk.blue(`🌊 Remnawave X Backend v${pkg.version}`)],
             [chalk.gray('─'.repeat(60))],
             [
                 chalk.cyan('📚 Documentation') +

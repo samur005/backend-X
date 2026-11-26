@@ -57,11 +57,11 @@ RUN cd node_modules/@prisma/client/runtime && \
 
 FROM node:24.22-trixie-slim
 
-LABEL org.opencontainers.image.title="Remnawave Backend-X"
+LABEL org.opencontainers.image.title="Remnawave X Backend"
 LABEL org.opencontainers.image.description="Powerful proxy management tool"
 LABEL org.opencontainers.image.url="https://github.com/samur005/backend-X"
 LABEL org.opencontainers.image.source="https://github.com/samur005/backend-X"
-LABEL org.opencontainers.image.vendor="Remnawave"
+LABEL org.opencontainers.image.vendor="Remnawave X"
 LABEL org.opencontainers.image.licenses="AGPL-3.0"
 LABEL org.opencontainers.image.documentation="https://docs.rw"
 

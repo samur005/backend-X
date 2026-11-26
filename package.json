@@ -2,7 +2,7 @@
   "name": "@remnawave/backend",
   "version": "3.4.11",
   "private": false,
-  "description": "Remnawave Panel Backend",
+  "description": "Remnawave X Panel Backend",
   "homepage": "https://github.com/remnawave",
   "bugs": {
     "url": "https://github.com/remnawave/backend/issues"

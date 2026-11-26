@@ -103,7 +103,7 @@ export const CONTROLLERS_INFO = {
     },
     KEYGEN: {
         tag: 'Keygen Controller',
-        description: 'Generation of SECRET_KEY for Remnawave Node.',
+        description: 'Generation of SECRET_KEY for Remnawave X Node.',
         resource: 'keygen',
     },
     SUBSCRIPTION_REQUEST_HISTORY: {
@@ -117,7 +117,7 @@ export const CONTROLLERS_INFO = {
         resource: 'snippets',
     },
     REMNAAWAVE_SETTINGS: {
-        tag: 'Remnawave Settings Controller',
+        tag: 'Remnawave X Settings Controller',
         description: '',
         resource: 'remnawave-settings',
     },

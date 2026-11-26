@@ -1,8 +1,8 @@
-# qWDTT in Remnawave-X
+# qWDTT in Remnawave X
 
-This document is the contract for the qWDTT integration in the samur005 Remnawave-X forks
+This document is the contract for the qWDTT integration in the samur005 Remnawave X forks
 (`backend-X`, `frontend-X`, `node-X`). Combined work stays under **AGPL-3.0-only**, same
-as Remnawave. Logic is ported from [samur005/3s-ui](https://github.com/samur005/3s-ui)
+as Remnawave X. Logic is ported from [samur005/3s-ui](https://github.com/samur005/3s-ui)
 (GPL-3.0), not from LucX (`internal/lucx/*`, PolyForm Noncommercial — do not copy).
 
 The sidecar binary is [SpaceNeuroX/proxy-turn-vk-android](https://github.com/SpaceNeuroX/proxy-turn-vk-android)
@@ -31,12 +31,12 @@ Images (never `remnawave/*`):
        |                              v
        |                         node's default WAN
        |
-  Remnawave Node-X agent  -- supervises sidecar, writes passwords.json, SIGHUP
+  Remnawave X Node agent  -- supervises sidecar, writes passwords.json, SIGHUP
        ^
        |  StartXray internals.integrations.qwdtt
        |  and POST /node/qwdtt/sync  (no Xray restart)
        |
-  Remnawave Backend-X  -- settings, VK hashes, users, links, traffic deltas
+  Remnawave X Backend  -- settings, VK hashes, users, links, traffic deltas
 ```
 
 qWDTT is a **separate process**, not an Xray inbound. Existing Xray/VLESS/SS/Trojan
@@ -48,8 +48,8 @@ paths are untouched.
 (`qwdtt0`, policy table 1977) so panel routing rules and outbounds apply, and
 it strips the sidecar's own MASQUERADE so sing-box sees client IPs.
 
-**Remnawave has no sing-box.** Xray can do TUN, but injecting an auto-routed TUN
-into a Remnawave config profile would steal the host default route (`auto_route`)
+**Remnawave X has no sing-box.** Xray can do TUN, but injecting an auto-routed TUN
+into a Remnawave X config profile would steal the host default route (`auto_route`)
 or require a fragile, profile-specific inbound the operator did not declare.
 That path is **not implemented**.
 
@@ -83,17 +83,17 @@ Max 4 hashes in a share link (`MaxHashes = 4`), same as 3s-ui.
 ## Users, passwords, devices, expiry, quota
 
 Unlike current 3s-ui (one shared password in every granted client's link),
-Remnawave-X issues a **per-user password**. That maps onto the sidecar's
+Remnawave X issues a **per-user password**. That maps onto the sidecar's
 `passwords.json` `passwords` map (`PasswordEntry`: `label`, `max_devices`,
 `expires_at`, `is_deactivated`, traffic counters). The sidecar reloads the
 file on **SIGHUP**. Device WireGuard keys and cumulative byte counters already
 in the file are preserved across writes.
 
-- Label = Remnawave username
+- Label = Remnawave X username
 - `max_devices` = `hwidDeviceLimit` (0 = sidecar default)
 - `expires_at` = `Users.expireAt` (unix seconds; 0 only if absent)
 - `is_deactivated` = user status is not `ACTIVE`, or qWDTT access is disabled
-- Traffic quota is **not** a sidecar field. When Remnawave marks the user
+- Traffic quota is **not** a sidecar field. When Remnawave X marks the user
   `LIMITED` / `EXPIRED` / `DISABLED`, the password is deactivated (or omitted).
   Sidecar-reported bytes are applied as **deltas** to `UserTraffic` and, when
   a node id is known, `NodesUserUsageHistory`. Counters in `passwords.json`
@@ -145,7 +145,7 @@ client-local setting, not a listen port on the server.
 
 The sidecar listens on `listenAddr` (default `0.0.0.0:56000` TCP and UDP,
 this is the `peer` port), `wgPort` (default `56001/udp`) and `listenRaw`
-(default `0.0.0.0:56003/udp`). The Remnawave-X installer opens those default
+(default `0.0.0.0:56003/udp`). The Remnawave X installer opens those default
 ports in ufw. If UFW (or a provider firewall) leaves `56000` closed, the
 client cannot reach the peer even when the sidecar is running. Do not open
 `clientPort` (9000) on the server. After changing listen ports in the
@@ -179,7 +179,7 @@ the file.
 
 If the file is lost or a password is rotated, cumulative counters reset and
 the panel will not invent a negative delta. qWDTT usage is added to the
-user's existing Remnawave traffic counters; it is **not** a second isolated
+user's existing Remnawave X traffic counters; it is **not** a second isolated
 quota.
 
 ## What is out of scope in this change

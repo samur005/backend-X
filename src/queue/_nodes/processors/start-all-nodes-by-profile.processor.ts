@@ -240,7 +240,7 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                         new UpdateNodeCommand({
                             uuid: node.uuid,
                             lastStatusMessage:
-                                'Unknown node version. Please upgrade Remnawave Node to the latest version.',
+                                'Unknown node version. Please upgrade Remnawave X Node to the latest version.',
                             lastStatusChange: new Date(),
                             isConnected: false,
                             isConnecting: false,
@@ -248,14 +248,14 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                     );
 
                     this.logger.error(
-                        `Node ${node.uuid} – unknown node version. Please upgrade Remnawave Node to the latest version.`,
+                        `Node ${node.uuid} – unknown node version. Please upgrade Remnawave X Node to the latest version.`,
                     );
                     return;
                 } else if (semver.lt(xrayStatusResponse.response.nodeVersion, '2.7.0')) {
                     pluginsSupported = false;
 
                     this.logger.warn(
-                        `Node ${node.uuid} running on outdated version of Remnawave Node. Please upgrade to the latest version. Some features may not work properly.`,
+                        `Node ${node.uuid} running on outdated version of Remnawave X Node. Please upgrade to the latest version. Some features may not work properly.`,
                     );
                 }
 
