@@ -5,6 +5,7 @@ import {
     appendQwdttLineToBase64Subscription,
     buildClientUri,
     buildSubscriptionDocument,
+    buildSubscriptionDocumentForProfiles,
     effectiveHashes,
     envHashOverride,
     normalizeHashes,
@@ -13,6 +14,7 @@ import {
     withPeerHost,
     isPrivateOrLocalPeerHost,
     peerHostname,
+    resolveQwdttHostPeer,
 } from './qwdtt-links';
 
 describe('stripHash / parseHashes', () => {
@@ -108,6 +110,34 @@ describe('subscription document', () => {
             ],
         });
     });
+
+    it('builds one document with a profile per host', () => {
+        const doc = buildSubscriptionDocumentForProfiles(
+            [
+                {
+                    remark: 'Germany',
+                    peer: 'de.example.com:56000',
+                    hashes: 'h1',
+                    workers: 16,
+                    clientPort: 9000,
+                    password: 'secret',
+                },
+                {
+                    remark: 'Finland',
+                    peer: 'fi.example.com:56000',
+                    hashes: 'h1',
+                    workers: 16,
+                    clientPort: 9000,
+                    password: 'secret',
+                },
+            ],
+            new Date('2026-11-26T00:00:00Z'),
+        );
+        assert.equal(doc?.subscriptionName, 'qWDTT');
+        assert.equal(doc?.profiles.length, 2);
+        assert.equal(doc?.profiles[0].name, 'Germany');
+        assert.equal(doc?.profiles[1].peer, 'fi.example.com:56000');
+    });
 });
 
 describe('appendQwdttLineToBase64Subscription', () => {
@@ -131,6 +161,30 @@ describe('appendQwdttLineToBase64Subscription', () => {
         assert.equal(decoded2.split('\n').filter((l) => l.startsWith('qwdtt://')).length, 1);
         assert.ok(
             decoded2.endsWith('2') || decoded2.includes('secret2') || decoded2.includes(link + '2'),
+        );
+    });
+
+    it('appends several qWDTT hosts and replaces previous qWDTT lines', () => {
+        const original = Buffer.from('vless://example\n').toString('base64');
+        const links = [
+            'qwdtt://config?name=Germany&peer=de.example.com:56000',
+            'qwdtt://config?name=Finland&peer=fi.example.com:56000',
+        ];
+        const out = appendQwdttLineToBase64Subscription(original, links);
+        const decoded = Buffer.from(out, 'base64').toString('utf8');
+        assert.ok(decoded.includes('vless://example'));
+        assert.ok(decoded.includes('name=Germany'));
+        assert.ok(decoded.includes('name=Finland'));
+        const again = appendQwdttLineToBase64Subscription(out, [
+            'qwdtt://config?name=Netherlands&peer=nl.example.com:56000',
+        ]);
+        const decodedAgain = Buffer.from(again, 'base64').toString('utf8');
+        assert.ok(decodedAgain.includes('vless://example'));
+        assert.ok(decodedAgain.includes('name=Netherlands'));
+        assert.equal(decodedAgain.includes('name=Germany'), false);
+        assert.equal(
+            decodedAgain.split(/\r?\n/).filter((line) => line.startsWith('qwdtt://')).length,
+            1,
         );
     });
 });
@@ -159,5 +213,39 @@ describe('isPrivateOrLocalPeerHost', () => {
         assert.equal(isPrivateOrLocalPeerHost('node.144.31.53.140.sslip.io:56000'), false);
         assert.equal(isPrivateOrLocalPeerHost('144.31.53.140'), false);
         assert.equal(peerHostname('node.example.com:56000'), 'node.example.com');
+    });
+});
+
+describe('resolveQwdttHostPeer', () => {
+    const base = { listenAddr: '0.0.0.0:56000', subHost: 'global.example.com' };
+    it('prefers the host address', () => {
+        assert.deepEqual(
+            resolveQwdttHostPeer({ ...base, hostAddress: 'de.example.com', hostPort: 56000, nodeAddress: '1.1.1.1' }),
+            { peer: 'de.example.com:56000', source: 'host' },
+        );
+    });
+    it('rejects a private host address instead of falling back', () => {
+        assert.equal(
+            resolveQwdttHostPeer({ ...base, hostAddress: '172.30.0.1', hostPort: 56000, nodeAddress: '1.1.1.1' }),
+            null,
+        );
+    });
+    it('uses the public node address when the host address is empty', () => {
+        assert.deepEqual(
+            resolveQwdttHostPeer({ ...base, hostAddress: '', hostPort: 0, nodeAddress: '144.31.53.140' }),
+            { peer: '144.31.53.140:56000', source: 'node' },
+        );
+    });
+    it('falls back to subHost when the node address is private', () => {
+        assert.deepEqual(
+            resolveQwdttHostPeer({ ...base, hostAddress: '', hostPort: 56000, nodeAddress: '172.30.0.1' }),
+            { peer: 'global.example.com:56000', source: 'subHost' },
+        );
+    });
+    it('returns null when nothing public is left', () => {
+        assert.equal(
+            resolveQwdttHostPeer({ listenAddr: '0.0.0.0:56000', subHost: '', hostAddress: '', hostPort: 56000, nodeAddress: '10.0.0.2' }),
+            null,
+        );
     });
 });

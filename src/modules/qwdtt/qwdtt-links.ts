@@ -154,8 +154,44 @@ export function buildSubscriptionDocument(
     };
 }
 
-export function appendQwdttLineToBase64Subscription(body: string, link: string): string {
-    if (!link) {
+export function buildSubscriptionDocumentForProfiles(
+    inputs: IQwdttLinkInput[],
+    now: Date = new Date(),
+): IQwdttSubscription | null {
+    const profiles = inputs
+        .map((input) => {
+            try {
+                return buildSubscriptionDocument(input, now).profiles[0];
+            } catch {
+                return null;
+            }
+        })
+        .filter((profile): profile is IQwdttSubscription['profiles'][number] => Boolean(profile));
+    if (profiles.length === 0) {
+        return null;
+    }
+    const y = now.getUTCFullYear();
+    const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(now.getUTCDate()).padStart(2, '0');
+    const name = profiles.length === 1 ? profiles[0].name : 'qWDTT';
+    return {
+        subscriptionName: name,
+        description:
+            profiles.length === 1
+                ? `qWDTT tunnel via ${profiles[0].peer}`
+                : `qWDTT tunnels (${profiles.length})`,
+        version: 1,
+        updatedAt: `${y}-${m}-${d}`,
+        profiles,
+    };
+}
+
+export function appendQwdttLineToBase64Subscription(
+    body: string,
+    link: string | string[],
+): string {
+    const links = (Array.isArray(link) ? link : [link]).map((item) => item.trim()).filter(Boolean);
+    if (links.length === 0) {
         return body;
     }
     const trimmed = body.trim();
@@ -171,14 +207,11 @@ export function appendQwdttLineToBase64Subscription(body: string, link: string):
         decoded = trimmed;
     }
     const lines = decoded.split(/\r?\n/).filter((line) => line.length > 0);
-    if (lines.some((line) => line.startsWith('qwdtt://'))) {
-        const without = lines.filter((line) => !line.startsWith('qwdtt://'));
-        without.push(link);
-        return Buffer.from(without.join('\n')).toString('base64');
-    }
-    lines.push(link);
-    return Buffer.from(lines.join('\n')).toString('base64');
+    const without = lines.filter((line) => !line.startsWith('qwdtt://'));
+    without.push(...links);
+    return Buffer.from(without.join('\n')).toString('base64');
 }
+
 
 export function generatePassword(length = 16): string {
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -307,4 +340,51 @@ export function isPrivateOrLocalPeerHost(host: string): boolean {
         return true;
     }
     return false;
+}
+
+export type TQwdttPeerSource = 'host' | 'node' | 'subHost';
+
+export interface IQwdttHostPeerInput {
+    hostAddress: string;
+    hostPort: number;
+    nodeAddress: string | null | undefined;
+    subHost: string | null | undefined;
+    listenAddr: string;
+}
+
+/**
+ * Peer for a qWDTT host, in priority order:
+ * 1. the host's own address (port = host port, or the sidecar DTLS port);
+ * 2. the public address of the bound node (never RFC1918 / loopback / ULA);
+ * 3. the global subHost from qWDTT settings (fallback only).
+ * Returns null when nothing usable is left, so the host is skipped.
+ */
+export function resolveQwdttHostPeer(
+    input: IQwdttHostPeerInput,
+): { peer: string; source: TQwdttPeerSource } | null {
+    const port = input.hostPort > 0 ? input.hostPort : dtlsPort(input.listenAddr);
+    const portAddr = `0.0.0.0:${port}`;
+    const hostAddress = input.hostAddress.trim();
+    if (hostAddress) {
+        const peer = withPeerHost(hostAddress, portAddr);
+        if (peer && !isPrivateOrLocalPeerHost(peer)) {
+            return { peer, source: 'host' };
+        }
+        return null;
+    }
+    const nodeAddress = (input.nodeAddress ?? '').trim();
+    if (nodeAddress && !isPrivateOrLocalPeerHost(nodeAddress)) {
+        const peer = withPeerHost(nodeAddress, portAddr);
+        if (peer && !isPrivateOrLocalPeerHost(peer)) {
+            return { peer, source: 'node' };
+        }
+    }
+    const subHost = (input.subHost ?? '').trim();
+    if (subHost && !isPrivateOrLocalPeerHost(subHost)) {
+        const peer = withPeerHost(subHost, portAddr);
+        if (peer && !isPrivateOrLocalPeerHost(peer)) {
+            return { peer, source: 'subHost' };
+        }
+    }
+    return null;
 }

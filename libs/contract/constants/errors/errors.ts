@@ -216,6 +216,16 @@ export const ERRORS = {
         message: 'Create host error',
         httpCode: 500,
     },
+    QWDTT_HOST_NODE_REQUIRED: {
+        code: 'A044Q',
+        message: 'A qWDTT host must be bound to exactly one node',
+        httpCode: 400,
+    },
+    QWDTT_HOST_PRIVATE_PEER: {
+        code: 'A044P',
+        message: 'A qWDTT host must use a public peer address, not a private or local address',
+        httpCode: 400,
+    },
     HOST_REMARK_ALREADY_EXISTS: {
         code: 'A045',
         message: 'Host remark already exists',

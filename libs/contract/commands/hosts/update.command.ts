@@ -31,6 +31,7 @@ export namespace UpdateHostCommand {
                 configProfileInboundUuid: z.uuid(),
             })
             .optional(),
+        isQwdtt: z.boolean().optional(),
         remark: z.string().min(1).max(100).optional(),
         address: z.string().optional(),
         port: z.int().optional(),

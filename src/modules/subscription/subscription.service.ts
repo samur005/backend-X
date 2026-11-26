@@ -289,13 +289,13 @@ export class SubscriptionService {
             });
 
             if (srrContext.matchedResponseType === 'XRAY_BASE64') {
-                const qwdttLink = await this.queryBus.execute(
+                const qwdttLinks = await this.queryBus.execute(
                     new GetQwdttUserLinkQuery(user.response.id),
                 );
-                if (qwdttLink) {
+                if (qwdttLinks.length > 0) {
                     subscription.subscription = appendQwdttLineToBase64Subscription(
                         subscription.subscription,
-                        qwdttLink,
+                        qwdttLinks,
                     );
                 }
             }

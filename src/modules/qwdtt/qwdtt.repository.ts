@@ -103,6 +103,43 @@ export class QwdttRepository {
         return rows.map((row) => row.userId);
     }
 
+    public async listQwdttHosts() {
+        return this.prisma.tx.hosts.findMany({
+            where: { isQwdtt: true },
+            include: {
+                nodes: {
+                    include: {
+                        node: {
+                            select: {
+                                uuid: true,
+                                name: true,
+                                address: true,
+                                isDisabled: true,
+                            },
+                        },
+                    },
+                },
+                internalSquads: true,
+            },
+            orderBy: { viewPosition: 'asc' },
+        });
+    }
+
+    public async listUserSquads(userId: bigint) {
+        return this.prisma.tx.internalSquadMembers.findMany({
+            where: { userId },
+            select: {
+                internalSquadUuid: true,
+                internalSquad: {
+                    select: {
+                        uuid: true,
+                        includeQwdtt: true,
+                    },
+                },
+            },
+        });
+    }
+
     public async listAutoGrantedUsers(): Promise<QwdttUserWithProfile[]> {
         return this.prisma.tx.qwdttUsers.findMany({
             where: { grantedManually: false },

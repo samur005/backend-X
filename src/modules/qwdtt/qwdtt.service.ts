@@ -15,19 +15,22 @@ import {
     UpdateQwdttCommand,
     UpsertQwdttUserCommand,
 } from '@libs/contracts/commands';
-import { ERRORS } from '@libs/contracts/constants';
+import { ERRORS, INTERNAL_SQUADS_MODE } from '@libs/contracts/constants';
 
 import {
     buildClientUri,
     buildSubscriptionDocument,
+    buildSubscriptionDocumentForProfiles,
     effectiveHashes,
     envHashOverride,
     generatePassword,
     hashSource,
+    IQwdttLinkInput,
     MAX_HASHES,
     normalizeHashes,
     parseHashes,
     isPrivateOrLocalPeerHost,
+    resolveQwdttHostPeer,
     withPeerHost,
 } from './qwdtt-links';
 import { createHashViaRemotePanel } from './qwdtt-remote';
@@ -235,22 +238,11 @@ export class QwdttService {
             if (!row) {
                 return fail(ERRORS.QWDTT_USER_NOT_FOUND);
             }
-            const link = await this.userLink(settings, row);
-            const subscription = link
-                ? JSON.stringify(
-                      buildSubscriptionDocument({
-                          remark: settings.remark || row.user.username,
-                          peer: this.resolveHost(settings),
-                          hashes: effectiveHashes(settings.vkHashes),
-                          workers: settings.workers,
-                          clientPort: settings.clientPort,
-                          password: row.password,
-                      }),
-                      null,
-                      2,
-                  )
-                : '';
-            return ok({ link, subscription });
+            const inputs = await this.buildUserLinkInputs(settings, row);
+            const links = inputs.map((input) => buildClientUri(input)).filter(Boolean);
+            const document = buildSubscriptionDocumentForProfiles(inputs);
+            const subscription = document ? JSON.stringify(document, null, 2) : '';
+            return ok({ link: links[0] ?? '', subscription });
         } catch (error) {
             this.logger.error(error);
             return fail(ERRORS.GET_QWDTT_ERROR);
@@ -276,34 +268,27 @@ export class QwdttService {
         if (!row || !this.userIsActive(row)) {
             return null;
         }
-        const peer = await this.resolveHostFromNodes(settings);
-        if (!peer || !row.password) {
-            return null;
-        }
-        return JSON.stringify(
-            buildSubscriptionDocument({
-                remark: settings.remark || row.user.username,
-                peer,
-                hashes: effectiveHashes(settings.vkHashes),
-                workers: settings.workers,
-                clientPort: settings.clientPort,
-                password: row.password,
-            }),
-            null,
-            2,
-        );
+        const inputs = await this.buildUserLinkInputs(settings, row);
+        const document = buildSubscriptionDocumentForProfiles(inputs);
+        return document ? JSON.stringify(document, null, 2) : null;
     }
 
     public async getPublicLinkForUser(userId: bigint): Promise<string> {
+        const links = await this.getPublicLinksForUser(userId);
+        return links[0] ?? '';
+    }
+
+    public async getPublicLinksForUser(userId: bigint): Promise<string[]> {
         const settings = await this.repository.getOrCreateSettings();
         if (!settings.enabled) {
-            return '';
+            return [];
         }
         const row = await this.ensureSubscriptionAccess(userId);
         if (!row || !this.userIsActive(row)) {
-            return '';
+            return [];
         }
-        return await this.userLink(settings, row);
+        const inputs = await this.buildUserLinkInputs(settings, row);
+        return inputs.map((input) => buildClientUri(input)).filter(Boolean);
     }
 
     public async syncAccessFromSquads(): Promise<void> {
@@ -662,6 +647,88 @@ export class QwdttService {
             clientPort: settings.clientPort,
             password: '••••',
         });
+    }
+
+    private async buildUserLinkInputs(
+        settings: QwdttSettings,
+        row: QwdttUserWithProfile,
+    ): Promise<IQwdttLinkInput[]> {
+        const hosts = await this.repository.listQwdttHosts();
+        const userSquads = await this.repository.listUserSquads(row.userId);
+        const squadUuids = new Set(userSquads.map((item) => item.internalSquad.uuid));
+        const assigned = new Set(settings.nodeUuids);
+        const fromHosts: IQwdttLinkInput[] = [];
+
+        for (const host of hosts) {
+            if (host.isDisabled || host.isHidden) {
+                continue;
+            }
+            if (!this.hostVisibleToUser(host, squadUuids)) {
+                continue;
+            }
+            if (host.nodes.length !== 1) {
+                continue;
+            }
+            const bound = host.nodes[0];
+            if (!assigned.has(bound.nodeUuid) || bound.node.isDisabled) {
+                continue;
+            }
+            const resolved = resolveQwdttHostPeer({
+                hostAddress: host.address,
+                hostPort: host.port,
+                nodeAddress: bound.node.address,
+                subHost: settings.subHost,
+                listenAddr: settings.listenAddr,
+            });
+            if (!resolved || !row.password) {
+                continue;
+            }
+            const peer = resolved.peer;
+            fromHosts.push({
+                remark: host.remark,
+                peer,
+                hashes: effectiveHashes(settings.vkHashes),
+                workers: settings.workers,
+                clientPort: settings.clientPort,
+                password: row.password,
+            });
+        }
+
+        if (fromHosts.length > 0) {
+            return fromHosts;
+        }
+
+        const peer = await this.resolveHostFromNodes(settings);
+        if (!peer || isPrivateOrLocalPeerHost(peer) || !row.password) {
+            return [];
+        }
+        return [
+            {
+                remark: settings.remark || row.user.username,
+                peer,
+                hashes: effectiveHashes(settings.vkHashes),
+                workers: settings.workers,
+                clientPort: settings.clientPort,
+                password: row.password,
+            },
+        ];
+    }
+
+    private hostVisibleToUser(
+        host: {
+            internalSquadsMode: string;
+            internalSquads: { squadUuid: string }[];
+        },
+        squadUuids: Set<string>,
+    ): boolean {
+        const linked = host.internalSquads.map((item) => item.squadUuid);
+        if (host.internalSquadsMode === INTERNAL_SQUADS_MODE.ALLOW_ONLY) {
+            return linked.some((uuid) => squadUuids.has(uuid));
+        }
+        if (squadUuids.size === 0) {
+            return true;
+        }
+        return [...squadUuids].some((uuid) => !linked.includes(uuid));
     }
 
     private async userLink(

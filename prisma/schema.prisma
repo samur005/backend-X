@@ -305,6 +305,10 @@ model Hosts {
   configProfileUuid        String? @map("config_profile_uuid") @db.Uuid
   configProfileInboundUuid String? @map("config_profile_inbound_uuid") @db.Uuid
 
+  // qWDTT is not an Xray inbound. A host with this flag is a subscription face
+  // (remark/location + public peer) bound to a node via HostsToNodes.
+  isQwdtt Boolean @default(false) @map("is_qwdtt")
+
   configProfileInbounds ConfigProfileInbounds? @relation(fields: [configProfileInboundUuid], references: [uuid], onDelete: SetNull)
   configProfiles        ConfigProfiles?        @relation(fields: [configProfileUuid], references: [uuid], onDelete: SetNull)
   xrayJsonTemplate      SubscriptionTemplate?  @relation(fields: [xrayJsonTemplateUuid], references: [uuid], onDelete: SetNull)
