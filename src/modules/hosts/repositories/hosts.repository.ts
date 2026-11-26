@@ -109,6 +109,21 @@ export class HostsRepository implements ICrud<HostsEntity> {
         return result.count;
     }
 
+    public async findByUuids(uuids: string[]): Promise<HostsEntity[]> {
+        if (uuids.length === 0) {
+            return [];
+        }
+        const list = await this.prisma.tx.hosts.findMany({
+            where: {
+                uuid: {
+                    in: uuids,
+                },
+            },
+            include: INCLUDE_RELATED,
+        });
+        return this.hostsConverter.fromPrismaModelsToEntities(list);
+    }
+
     public async findByCriteria(
         dto: Omit<
             Partial<HostsEntity>,

@@ -213,6 +213,138 @@ export function appendQwdttLineToBase64Subscription(
 }
 
 
+
+export function parseClientUri(uri: string): IQwdttSubProfile | null {
+    const trimmed = uri.trim();
+    if (!trimmed.startsWith('qwdtt://')) {
+        return null;
+    }
+    try {
+        const parsed = new URL(trimmed);
+        const query = parsed.searchParams;
+        const peer = (query.get('peer') ?? '').trim();
+        const password = (query.get('pass') ?? '').trim();
+        if (!peer || !password) {
+            return null;
+        }
+        const workers = Number(query.get('workers') ?? '');
+        const port = Number(query.get('port') ?? '');
+        return {
+            name: (query.get('name') ?? '').trim() || 'qWDTT',
+            peer,
+            hashes: normalizeHashes(query.get('hashes') ?? ''),
+            workers: Number.isFinite(workers) && workers > 0 ? workers : 0,
+            port: Number.isFinite(port) && port > 0 ? port : 9000,
+            password,
+        };
+    } catch {
+        return null;
+    }
+}
+
+export function profilesFromLinks(links: string[]): IQwdttSubProfile[] {
+    return links
+        .map((link) => parseClientUri(link))
+        .filter((profile): profile is IQwdttSubProfile => Boolean(profile));
+}
+
+const QWDTT_FORMAT_NOTE =
+    'qWDTT has no native outbound in this client. Official sing-box, mihomo, Clash and Xray ignore this key; import the qwdtt:// links with a qWDTT-aware client, or use /qwdtt JSON.';
+
+function qwdttPayload(links: string[]): {
+    note: string;
+    links: string[];
+    profiles: IQwdttSubProfile[];
+} | null {
+    const clean = links.map((item) => item.trim()).filter(Boolean);
+    const profiles = profilesFromLinks(clean);
+    if (clean.length === 0 || profiles.length === 0) {
+        return null;
+    }
+    return {
+        note: QWDTT_FORMAT_NOTE,
+        links: clean,
+        profiles,
+    };
+}
+
+export function attachQwdttToJsonConfig(body: string, links: string[]): string {
+    const payload = qwdttPayload(links);
+    if (!payload) {
+        return body;
+    }
+    const trimmed = body.trim();
+    if (!trimmed) {
+        return JSON.stringify({ qwdtt: payload }, null, 2);
+    }
+    try {
+        const parsed = JSON.parse(trimmed) as unknown;
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+            return body;
+        }
+        (parsed as Record<string, unknown>).qwdtt = payload;
+        return JSON.stringify(parsed, null, 2);
+    } catch {
+        return body;
+    }
+}
+
+export function attachQwdttToYamlConfig(body: string, links: string[]): string {
+    const payload = qwdttPayload(links);
+    if (!payload) {
+        return body;
+    }
+    const lines: string[] = [
+        '# Remnawave X: qWDTT is not a native Clash/mihomo/stash proxy type.',
+        '# Official clients ignore the qwdtt key; import the qwdtt:// links with a qWDTT-aware client.',
+        'qwdtt:',
+        '  note: ' + JSON.stringify(payload.note),
+        '  links:',
+    ];
+    for (const link of payload.links) {
+        lines.push('    - ' + JSON.stringify(link));
+    }
+    lines.push('  profiles:');
+    for (const profile of payload.profiles) {
+        lines.push('    - name: ' + JSON.stringify(profile.name));
+        lines.push('      peer: ' + JSON.stringify(profile.peer));
+        lines.push('      hashes: ' + JSON.stringify(profile.hashes));
+        lines.push('      workers: ' + String(profile.workers));
+        lines.push('      port: ' + String(profile.port));
+        lines.push('      password: ' + JSON.stringify(profile.password));
+    }
+    const block = lines.join('\n');
+    const trimmed = body.replace(/\s+$/, '');
+    if (!trimmed) {
+        return block + '\n';
+    }
+    return `${trimmed}\n\n${block}\n`;
+}
+
+export function attachQwdttToRenderedSubscription(
+    responseType: string,
+    body: string,
+    links: string | string[],
+): string {
+    const list = (Array.isArray(links) ? links : [links]).map((item) => item.trim()).filter(Boolean);
+    if (list.length === 0) {
+        return body;
+    }
+    switch (responseType) {
+        case 'XRAY_BASE64':
+            return appendQwdttLineToBase64Subscription(body, list);
+        case 'SINGBOX':
+        case 'XRAY_JSON':
+            return attachQwdttToJsonConfig(body, list);
+        case 'MIHOMO':
+        case 'CLASH':
+        case 'STASH':
+            return attachQwdttToYamlConfig(body, list);
+        default:
+            return body;
+    }
+}
+
 export function generatePassword(length = 16): string {
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
     const limit = 256 - (256 % alphabet.length);

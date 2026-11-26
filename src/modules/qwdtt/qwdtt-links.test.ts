@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+    attachQwdttToJsonConfig,
+    attachQwdttToRenderedSubscription,
+    attachQwdttToYamlConfig,
+    parseClientUri,
     appendQwdttLineToBase64Subscription,
     buildClientUri,
     buildSubscriptionDocument,
@@ -247,5 +251,56 @@ describe('resolveQwdttHostPeer', () => {
             resolveQwdttHostPeer({ listenAddr: '0.0.0.0:56000', subHost: '', hostAddress: '', hostPort: 56000, nodeAddress: '10.0.0.2' }),
             null,
         );
+    });
+});
+
+describe('qWDTT in other subscription formats', () => {
+    const link =
+        'qwdtt://config?name=Steal%20%C2%B7%20qWDTT&peer=node.example.com%3A56000&hashes=h1&workers=16&port=9000&pass=testpass';
+
+    it('parses a qwdtt:// link into a profile', () => {
+        assert.deepEqual(parseClientUri(link), {
+            name: 'Steal · qWDTT',
+            peer: 'node.example.com:56000',
+            hashes: 'h1',
+            workers: 16,
+            port: 9000,
+            password: 'testpass',
+        });
+    });
+
+    it('adds a qwdtt object to sing-box and Xray JSON without touching outbounds', () => {
+        const body = JSON.stringify({ outbounds: [{ type: 'vless', tag: 'proxy' }] });
+        const result = attachQwdttToJsonConfig(body, [link]);
+        const parsed = JSON.parse(result);
+        assert.equal(parsed.outbounds.length, 1);
+        assert.equal(parsed.outbounds[0].type, 'vless');
+        assert.equal(parsed.qwdtt.profiles.length, 1);
+        assert.equal(parsed.qwdtt.profiles[0].name, 'Steal · qWDTT');
+        assert.equal(parsed.qwdtt.profiles[0].peer, 'node.example.com:56000');
+        assert.equal(parsed.qwdtt.links[0], link);
+        assert.match(parsed.qwdtt.note, /no native outbound/);
+    });
+
+    it('appends a qwdtt mapping to mihomo YAML and keeps existing proxies', () => {
+        const body = 'proxies:\n  - name: vless-1\n    type: vless\n';
+        const result = attachQwdttToYamlConfig(body, [link]);
+        assert.match(result, /name: vless-1/);
+        assert.match(result, /^qwdtt:/m);
+        assert.match(result, /peer: "node.example.com:56000"/);
+        assert.match(result, /Steal · qWDTT|Steal \\u00b7 qWDTT|Steal/);
+    });
+
+    it('routes by subscription type', () => {
+        const json = attachQwdttToRenderedSubscription(
+            'SINGBOX',
+            '{"outbounds":[]}',
+            [link],
+        );
+        assert.ok(JSON.parse(json).qwdtt);
+        const yaml = attachQwdttToRenderedSubscription('MIHOMO', 'proxies: []\n', [link]);
+        assert.match(yaml, /^qwdtt:/m);
+        const xray = attachQwdttToRenderedSubscription('XRAY_JSON', '{"outbounds":[]}', [link]);
+        assert.ok(JSON.parse(xray).qwdtt);
     });
 });
