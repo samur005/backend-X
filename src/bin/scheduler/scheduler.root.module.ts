@@ -7,6 +7,7 @@ import { Logger, Module, OnApplicationShutdown } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 
+import { AxiosModule } from '@common/axios';
 import { CommonConfigModule } from '@common/config/common-config';
 import { PrismaModule } from '@common/database';
 import { PrismaService } from '@common/database/prisma.service';
@@ -25,6 +26,7 @@ import { SchedulerModule } from '@scheduler/scheduler.module';
     imports: [
         RawCacheModule,
         RequestAuthModule,
+        AxiosModule,
         CommonConfigModule,
         PrismaModule,
         ClsModule.forRoot({

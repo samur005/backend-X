@@ -227,3 +227,84 @@ export function withPeerHost(host: string, listenAddr: string): string {
     const left = needsBrackets ? `[${hostname}]` : hostname;
     return `${left}:${dtlsPort(listenAddr)}`;
 }
+
+/** Hostname part of a peer (`host`, `host:port`, or `[ipv6]:port`). */
+export function peerHostname(host: string): string {
+    const trimmed = host.trim();
+    if (!trimmed) {
+        return '';
+    }
+    if (trimmed.startsWith('[')) {
+        const end = trimmed.indexOf(']');
+        return end > 1 ? trimmed.slice(1, end) : trimmed.replace(/^\[/, '').replace(/\]$/, '');
+    }
+    const last = trimmed.lastIndexOf(':');
+    if (last > 0 && !trimmed.includes(':')) {
+        return trimmed;
+    }
+    if (last > 0) {
+        const maybePort = Number(trimmed.slice(last + 1));
+        if (Number.isInteger(maybePort) && maybePort > 0 && !trimmed.slice(0, last).includes(':')) {
+            return trimmed.slice(0, last);
+        }
+    }
+    return trimmed;
+}
+
+function ipv4Octets(host: string): number[] | null {
+    const parts = host.split('.');
+    if (parts.length !== 4) {
+        return null;
+    }
+    const nums = parts.map((p) => Number(p));
+    if (nums.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
+        return null;
+    }
+    return nums;
+}
+
+/**
+ * True when a peer host is loopback, unspecified, link-local, or RFC1918 / ULA.
+ * The node's management address is often a Docker bridge IP and must not be
+ * written into a client link unless the operator set subHost explicitly.
+ */
+export function isPrivateOrLocalPeerHost(host: string): boolean {
+    const name = peerHostname(host).toLowerCase();
+    if (!name) {
+        return true;
+    }
+    if (name === 'localhost' || name === 'localhost.' || name.endsWith('.localhost')) {
+        return true;
+    }
+    if (name === '::1' || name === '::' || name === '0:0:0:0:0:0:0:1' || name === '0:0:0:0:0:0:0:0') {
+        return true;
+    }
+    if (name.includes(':')) {
+        const compact = name.replace(/^0+/, '').replace(/:0+/g, ':');
+        if (name.startsWith('fe80:') || name.startsWith('fc') || name.startsWith('fd')) {
+            return true;
+        }
+        if (compact === '::1' || compact === ':') {
+            return true;
+        }
+        return false;
+    }
+    const oct = ipv4Octets(name);
+    if (!oct) {
+        return false;
+    }
+    const [a, b] = oct;
+    if (a === 10 || a === 127 || a === 0) {
+        return true;
+    }
+    if (a === 192 && b === 168) {
+        return true;
+    }
+    if (a === 169 && b === 254) {
+        return true;
+    }
+    if (a === 172 && b >= 16 && b <= 31) {
+        return true;
+    }
+    return false;
+}

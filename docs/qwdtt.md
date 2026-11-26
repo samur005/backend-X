@@ -131,7 +131,25 @@ peer. Clash/sing-box/Xray JSON templates are not modified — those clients do
 not speak qWDTT. A dedicated public document is served at
 `/api/sub/:shortUuid/qwdtt`.
 
-`peer` comes from `subHost` if set, otherwise `<first assigned node address>:<dtlsPort>`.
+`peer` comes from `subHost` if set, otherwise the first assigned node whose
+address is a public hostname or public IP, plus `:<dtlsPort>`. A node
+management address on a private network (for example `172.30.0.1` on the
+installer Docker bridge) is skipped: that address is not reachable by a
+client, so the operator must set **Subscription host** (`subHost`) to the
+public hostname or IP of the node (e.g. `node.example.com`).
+
+`port` in the share link is `clientPort` (default 9000). That is a
+client-local setting, not a listen port on the server.
+
+## Firewall
+
+The sidecar listens on `listenAddr` (default `0.0.0.0:56000` TCP and UDP,
+this is the `peer` port), `wgPort` (default `56001/udp`) and `listenRaw`
+(default `0.0.0.0:56003/udp`). The Remnawave-X installer opens those default
+ports in ufw. If UFW (or a provider firewall) leaves `56000` closed, the
+client cannot reach the peer even when the sidecar is running. Do not open
+`clientPort` (9000) on the server. After changing listen ports in the
+panel, open the new ports and close the old ones.
 
 ## Backend ↔ Node contract
 
@@ -166,6 +184,5 @@ quota.
 
 ## What is out of scope in this change
 
-- Patching the eGames/remnawave-reverse-proxy installer
-- Publishing images to GHCR
+- Publishing images to GHCR from this document
 - Routing qWDTT traffic through Xray

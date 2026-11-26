@@ -16,6 +16,7 @@ import * as winston from 'winston';
 
 import { NestFactory } from '@nestjs/core';
 
+import { AxiosService } from '@common/axios';
 import { TypedConfigService } from '@common/config/app-config';
 import { NotFoundExceptionFilter } from '@common/exception/not-found-exception.filter';
 import { WorkerRoutesGuard } from '@common/guards/worker-routes/worker-routes.guard';
@@ -92,6 +93,10 @@ async function bootstrap(): Promise<void> {
     );
 
     app.enableShutdownHooks();
+
+    // Traffic collection and hash-maintenance sync run in this process.
+    const axiosService = app.get(AxiosService);
+    await axiosService.setJwt();
 
     await app.listen(config.getOrThrow('METRICS_PORT'));
 

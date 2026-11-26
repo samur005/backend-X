@@ -27,6 +27,7 @@ import {
     MAX_HASHES,
     normalizeHashes,
     parseHashes,
+    isPrivateOrLocalPeerHost,
     withPeerHost,
 } from './qwdtt-links';
 import { createHashViaRemotePanel } from './qwdtt-remote';
@@ -721,7 +722,9 @@ export class QwdttService {
             return fromSettings;
         }
         const nodes = await this.repository.findNodesByUuids(settings.nodeUuids);
-        const live = nodes.find((node) => !node.isDisabled);
+        const live = nodes.find(
+            (node) => !node.isDisabled && !isPrivateOrLocalPeerHost(node.address),
+        );
         return live ? withPeerHost(live.address, settings.listenAddr) : '';
     }
 

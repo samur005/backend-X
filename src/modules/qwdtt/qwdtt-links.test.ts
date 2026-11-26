@@ -11,6 +11,8 @@ import {
     parseHashes,
     stripHash,
     withPeerHost,
+    isPrivateOrLocalPeerHost,
+    peerHostname,
 } from './qwdtt-links';
 
 describe('stripHash / parseHashes', () => {
@@ -137,5 +139,25 @@ describe('withPeerHost', () => {
     it('adds the DTLS port when only a host is given', () => {
         assert.equal(withPeerHost('example.com', '0.0.0.0:56000'), 'example.com:56000');
         assert.equal(withPeerHost('example.com:1234', '0.0.0.0:56000'), 'example.com:1234');
+    });
+});
+
+describe('isPrivateOrLocalPeerHost', () => {
+    it('treats docker-bridge and RFC1918 addresses as unusable automatic peers', () => {
+        assert.equal(isPrivateOrLocalPeerHost('172.30.0.1'), true);
+        assert.equal(isPrivateOrLocalPeerHost('172.30.0.1:56000'), true);
+        assert.equal(isPrivateOrLocalPeerHost('10.0.0.5'), true);
+        assert.equal(isPrivateOrLocalPeerHost('192.168.1.2'), true);
+        assert.equal(isPrivateOrLocalPeerHost('127.0.0.1'), true);
+        assert.equal(isPrivateOrLocalPeerHost('localhost'), true);
+        assert.equal(isPrivateOrLocalPeerHost('::1'), true);
+        assert.equal(isPrivateOrLocalPeerHost('fd00::1'), true);
+    });
+
+    it('keeps public hostnames and addresses', () => {
+        assert.equal(isPrivateOrLocalPeerHost('node.example.com'), false);
+        assert.equal(isPrivateOrLocalPeerHost('node.144.31.53.140.sslip.io:56000'), false);
+        assert.equal(isPrivateOrLocalPeerHost('144.31.53.140'), false);
+        assert.equal(peerHostname('node.example.com:56000'), 'node.example.com');
     });
 });
