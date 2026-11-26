@@ -126,10 +126,19 @@ Format is taken from 3s-ui, not invented:
   `{ subscriptionName, description, version: 1, updatedAt: "YYYY-MM-DD", profiles: [{ name, peer, hashes, workers, port, password }] }`
 
 The regular XRAY_BASE64 subscription gets the `qwdtt://` line appended (then
-re-encoded) when the user has access and qWDTT is enabled with a resolvable
-peer. Clash/sing-box/Xray JSON templates are not modified — those clients do
-not speak qWDTT. A dedicated public document is served at
-`/api/sub/:shortUuid/qwdtt`.
+re-encoded) when the user has access and a resolvable public peer — one line
+per eligible qWDTT host, with the same remark and peer as the share link. If
+no eligible hosts exist, the previous global link is used.
+
+sing-box and Xray JSON also receive one profile per eligible host, in a
+top-level `qwdtt` object (`profiles`, `links`, and a short `note`). Official
+sing-box and Xray-core have no native qWDTT outbound, so the profiles are
+not added to `outbounds` (an unknown outbound type would break the config).
+Go clients typically ignore the extra root key. Mihomo, Clash and Stash get
+the same data as a `qwdtt:` YAML mapping appended after the generated
+document, plus comments that official Clash-family clients ignore.
+
+A dedicated public document remains at `/api/sub/:shortUuid/qwdtt`.
 
 `peer` comes from `subHost` if set, otherwise the first assigned node whose
 address is a public hostname or public IP, plus `:<dtlsPort>`. A node

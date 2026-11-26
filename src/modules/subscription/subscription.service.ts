@@ -41,7 +41,7 @@ import { GetUsersWithPaginationQuery } from '@modules/users/queries/get-users-wi
 import { UsersQueuesService } from '@queue/_users/users-queues.service';
 
 import { GetQwdttUserLinkQuery } from '@modules/qwdtt/queries';
-import { appendQwdttLineToBase64Subscription } from '@modules/qwdtt/qwdtt-links';
+import { attachQwdttToRenderedSubscription } from '@modules/qwdtt/qwdtt-links';
 import { GetHostsForUserQuery } from '../hosts/queries/get-hosts-for-user';
 import { GetSubscriptionsQueryDto } from './dto';
 import {
@@ -288,16 +288,15 @@ export class SubscriptionService {
                 hostsOverrides,
             });
 
-            if (srrContext.matchedResponseType === 'XRAY_BASE64') {
-                const qwdttLinks = await this.queryBus.execute(
-                    new GetQwdttUserLinkQuery(user.response.id),
+            const qwdttLinks = await this.queryBus.execute(
+                new GetQwdttUserLinkQuery(user.response.id),
+            );
+            if (qwdttLinks.length > 0) {
+                subscription.subscription = attachQwdttToRenderedSubscription(
+                    srrContext.matchedResponseType,
+                    subscription.subscription,
+                    qwdttLinks,
                 );
-                if (qwdttLinks.length > 0) {
-                    subscription.subscription = appendQwdttLineToBase64Subscription(
-                        subscription.subscription,
-                        qwdttLinks,
-                    );
-                }
             }
 
             return new SubscriptionWithConfigResponse({

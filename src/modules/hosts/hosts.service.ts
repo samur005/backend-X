@@ -469,9 +469,49 @@ export class HostsService {
                 }
             }
 
-            let configProfileUuid: string | undefined;
-            let configProfileInboundUuid: string | undefined;
-            if (inboundObj) {
+            const shouldInspectHosts =
+                dto.isQwdtt !== undefined || dto.address !== undefined || nodes !== undefined;
+            const existingHosts = shouldInspectHosts
+                ? await this.hostsRepository.findByUuids(uuids)
+                : [];
+
+            const addressIsPrivate = (address: string, port: number | undefined): boolean => {
+                const trimmed = address.trim();
+                if (!trimmed) {
+                    return false;
+                }
+                if (isPrivateOrLocalPeerHost(trimmed)) {
+                    return true;
+                }
+                return port !== undefined && isPrivateOrLocalPeerHost(`${trimmed}:${port}`);
+            };
+
+            if (dto.isQwdtt === true) {
+                if (!nodes || nodes.length !== 1) {
+                    return fail(ERRORS.QWDTT_HOST_NODE_REQUIRED);
+                }
+                if (dto.address !== undefined && addressIsPrivate(dto.address, dto.port)) {
+                    return fail(ERRORS.QWDTT_HOST_PRIVATE_PEER);
+                }
+            } else if (dto.isQwdtt === false) {
+                if (!inboundObj?.configProfileUuid || !inboundObj?.configProfileInboundUuid) {
+                    return fail(ERRORS.CONFIG_PROFILE_INBOUND_NOT_FOUND_IN_SPECIFIED_PROFILE);
+                }
+            } else if (existingHosts.some((host) => host.isQwdtt)) {
+                if (nodes !== undefined && nodes.length !== 1) {
+                    return fail(ERRORS.QWDTT_HOST_NODE_REQUIRED);
+                }
+                if (dto.address !== undefined && addressIsPrivate(dto.address, dto.port)) {
+                    return fail(ERRORS.QWDTT_HOST_PRIVATE_PEER);
+                }
+            }
+
+            let configProfileUuid: string | null | undefined;
+            let configProfileInboundUuid: string | null | undefined;
+            if (dto.isQwdtt === true) {
+                configProfileUuid = null;
+                configProfileInboundUuid = null;
+            } else if (inboundObj) {
                 const configProfile = await this.queryBus.execute(
                     new GetConfigProfileByUuidQuery(inboundObj.configProfileUuid),
                 );
