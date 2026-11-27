@@ -42,6 +42,7 @@ export class HostsEntity implements Hosts {
     configProfileUuid: string | null;
     configProfileInboundUuid: string | null;
     isQwdtt: boolean;
+    isAwg: boolean;
 
     xrayJsonTemplateUuid: string | null;
     excludeFromSubscriptionTypes: TSubscriptionTemplateType[];

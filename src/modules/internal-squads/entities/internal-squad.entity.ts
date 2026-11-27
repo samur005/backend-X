@@ -6,6 +6,7 @@ export class InternalSquadEntity implements InternalSquads {
     public name: string;
     public tags: string[];
     public includeQwdtt: boolean;
+    public includeAwg: boolean;
 
     public createdAt: Date;
     public updatedAt: Date;

@@ -100,7 +100,6 @@ export class InternalSquadController {
         };
     }
 
-
     @Endpoint({
         command: GetInternalSquadsCommand,
         httpCode: HttpStatus.OK,
@@ -146,6 +145,7 @@ export class InternalSquadController {
             createInternalSquadDto.name,
             createInternalSquadDto.inbounds,
             createInternalSquadDto.includeQwdtt,
+            createInternalSquadDto.includeAwg,
         );
 
         const data = errorHandler(result);
@@ -203,6 +203,7 @@ export class InternalSquadController {
             body.name,
             body.inbounds,
             body.includeQwdtt,
+            body.includeAwg,
         );
 
         const data = errorHandler(result);
@@ -293,5 +294,4 @@ export class InternalSquadController {
         errorHandler(result);
         return;
     }
-
 }

@@ -8,6 +8,7 @@ export const InternalSquadSchema = z.object({
     name: z.string(),
     tags: z.array(z.string()),
     includeQwdtt: z.boolean(),
+    includeAwg: z.boolean(),
 
     info: z.object({
         membersCount: z.number(),

@@ -10,9 +10,8 @@ import { getDateRangeArrayUtil } from '@common/utils/get-date-range-array.util';
 import { ERRORS } from '@libs/contracts/constants/errors';
 
 import { AddUsersToNodeEvent } from '@modules/nodes/events/add-users-to-node';
-import { ValidateUserIdsQuery } from '@modules/users/queries/validate-user-ids';
-
 import { SyncQwdttSquadAccessCommand } from '@modules/qwdtt/commands/sync-qwdtt-squad-access.command';
+import { ValidateUserIdsQuery } from '@modules/users/queries/validate-user-ids';
 
 import { NodesQueuesService } from '@queue/_nodes';
 import { SquadsQueueService } from '@queue/_squads';
@@ -85,6 +84,7 @@ export class InternalSquadService {
         name: string,
         inbounds: string[],
         includeQwdtt = false,
+        includeAwg = false,
     ): Promise<TResult<GetInternalSquadByUuidResponseModel>> {
         try {
             if (name === 'Default-Squad') {
@@ -95,6 +95,7 @@ export class InternalSquadService {
                 name,
                 inbounds,
                 includeQwdtt,
+                includeAwg,
             );
 
             await this.syncQwdttSquadAccess();
@@ -123,6 +124,7 @@ export class InternalSquadService {
         name?: string,
         inbounds?: string[],
         includeQwdtt?: boolean,
+        includeAwg?: boolean,
     ): Promise<TResult<GetInternalSquadByUuidResponseModel>> {
         try {
             const internalSquad = await this.internalSquadRepository.findByUUID(uuid);
@@ -131,15 +133,21 @@ export class InternalSquadService {
                 return fail(ERRORS.INTERNAL_SQUAD_NOT_FOUND);
             }
 
-            if (!name && inbounds === undefined && includeQwdtt === undefined) {
+            if (
+                !name &&
+                inbounds === undefined &&
+                includeQwdtt === undefined &&
+                includeAwg === undefined
+            ) {
                 return fail(ERRORS.NAME_OR_INBOUNDS_REQUIRED);
             }
 
-            if (name || includeQwdtt !== undefined) {
+            if (name || includeQwdtt !== undefined || includeAwg !== undefined) {
                 await this.internalSquadRepository.update({
                     uuid,
                     ...(name ? { name } : {}),
                     ...(includeQwdtt !== undefined ? { includeQwdtt } : {}),
+                    ...(includeAwg !== undefined ? { includeAwg } : {}),
                 });
             }
 

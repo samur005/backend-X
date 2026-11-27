@@ -1,0 +1,1 @@
+ALTER TABLE "hosts" ADD COLUMN "is_awg" BOOLEAN NOT NULL DEFAULT false;

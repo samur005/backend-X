@@ -21,6 +21,41 @@ import {
 import { HostsEntity } from './entities/hosts.entity';
 import { HostsRepository } from './repositories/hosts.repository';
 
+type TSidecarHostKind = 'qwdtt' | 'awg' | 'conflict';
+
+function sidecarHostKind(isQwdtt: boolean, isAwg: boolean): TSidecarHostKind | null {
+    if (isQwdtt && isAwg) {
+        return 'conflict';
+    }
+    if (isAwg) {
+        return 'awg';
+    }
+    if (isQwdtt) {
+        return 'qwdtt';
+    }
+    return null;
+}
+
+function sidecarHostNodeError(kind: TSidecarHostKind) {
+    if (kind === 'awg') {
+        return ERRORS.AWG_HOST_NODE_REQUIRED;
+    }
+    if (kind === 'conflict') {
+        return ERRORS.HOST_SIDECAR_TYPE_CONFLICT;
+    }
+    return ERRORS.QWDTT_HOST_NODE_REQUIRED;
+}
+
+function sidecarHostPrivateError(kind: TSidecarHostKind) {
+    if (kind === 'awg') {
+        return ERRORS.AWG_HOST_PRIVATE_PEER;
+    }
+    if (kind === 'conflict') {
+        return ERRORS.HOST_SIDECAR_TYPE_CONFLICT;
+    }
+    return ERRORS.QWDTT_HOST_PRIVATE_PEER;
+}
+
 @Injectable()
 export class HostsService {
     private readonly logger = new Logger(HostsService.name);
@@ -57,19 +92,25 @@ export class HostsService {
             } = dto;
 
             const isQwdtt = Boolean(dto.isQwdtt);
+            const isAwg = Boolean(dto.isAwg);
+            const sidecarKind = sidecarHostKind(isQwdtt, isAwg);
             let configProfileUuid: string | null = null;
             let configProfileInboundUuid: string | null = null;
 
-            if (isQwdtt) {
+            if (sidecarKind === 'conflict') {
+                return fail(ERRORS.HOST_SIDECAR_TYPE_CONFLICT);
+            }
+
+            if (sidecarKind) {
                 if (!nodes || nodes.length !== 1) {
-                    return fail(ERRORS.QWDTT_HOST_NODE_REQUIRED);
+                    return fail(sidecarHostNodeError(sidecarKind));
                 }
                 const address = dto.address.trim();
                 if (
                     (address && isPrivateOrLocalPeerHost(address)) ||
                     (address !== '' && isPrivateOrLocalPeerHost(`${address}:${dto.port}`))
                 ) {
-                    return fail(ERRORS.QWDTT_HOST_PRIVATE_PEER);
+                    return fail(sidecarHostPrivateError(sidecarKind));
                 }
             } else {
                 if (!inboundObj) {
@@ -97,6 +138,7 @@ export class HostsService {
                 ...rest,
                 address: dto.address.trim(),
                 isQwdtt,
+                isAwg,
                 xhttpExtraParams: nullifyEmpty(xhttpExtraParams),
                 muxParams: nullifyEmpty(muxParams),
                 sockoptParams: nullifyEmpty(sockoptParams),
@@ -212,13 +254,19 @@ export class HostsService {
             }
 
             const isQwdtt = dto.isQwdtt ?? host.isQwdtt;
+            const isAwg = dto.isAwg ?? host.isAwg;
+            const sidecarKind = sidecarHostKind(isQwdtt, isAwg);
             let configProfileUuid: string | null | undefined;
             let configProfileInboundUuid: string | null | undefined;
 
-            if (isQwdtt) {
+            if (sidecarKind === 'conflict') {
+                return fail(ERRORS.HOST_SIDECAR_TYPE_CONFLICT);
+            }
+
+            if (sidecarKind) {
                 const nextNodes = nodes ?? host.nodes.map((node) => node.nodeUuid);
                 if (nextNodes.length !== 1) {
-                    return fail(ERRORS.QWDTT_HOST_NODE_REQUIRED);
+                    return fail(sidecarHostNodeError(sidecarKind));
                 }
                 const address = (dto.address ?? host.address).trim();
                 const port = dto.port ?? host.port;
@@ -226,7 +274,7 @@ export class HostsService {
                     (address && isPrivateOrLocalPeerHost(address)) ||
                     (address !== '' && isPrivateOrLocalPeerHost(`${address}:${port}`))
                 ) {
-                    return fail(ERRORS.QWDTT_HOST_PRIVATE_PEER);
+                    return fail(sidecarHostPrivateError(sidecarKind));
                 }
                 configProfileUuid = null;
                 configProfileInboundUuid = null;
@@ -268,6 +316,7 @@ export class HostsService {
                 ...rest,
                 address: dto.address ? dto.address.trim() : undefined,
                 isQwdtt,
+                isAwg,
                 xhttpExtraParams,
                 muxParams,
                 sockoptParams,
@@ -470,7 +519,10 @@ export class HostsService {
             }
 
             const shouldInspectHosts =
-                dto.isQwdtt !== undefined || dto.address !== undefined || nodes !== undefined;
+                dto.isQwdtt !== undefined ||
+                dto.isAwg !== undefined ||
+                dto.address !== undefined ||
+                nodes !== undefined;
             const existingHosts = shouldInspectHosts
                 ? await this.hostsRepository.findByUuids(uuids)
                 : [];
@@ -486,14 +538,33 @@ export class HostsService {
                 return port !== undefined && isPrivateOrLocalPeerHost(`${trimmed}:${port}`);
             };
 
-            if (dto.isQwdtt === true) {
+            if (dto.isQwdtt === true && dto.isAwg === true) {
+                return fail(ERRORS.HOST_SIDECAR_TYPE_CONFLICT);
+            }
+            if (
+                dto.isQwdtt === true &&
+                dto.isAwg !== false &&
+                existingHosts.some((host) => host.isAwg)
+            ) {
+                return fail(ERRORS.HOST_SIDECAR_TYPE_CONFLICT);
+            }
+            if (
+                dto.isAwg === true &&
+                dto.isQwdtt !== false &&
+                existingHosts.some((host) => host.isQwdtt)
+            ) {
+                return fail(ERRORS.HOST_SIDECAR_TYPE_CONFLICT);
+            }
+
+            if (dto.isQwdtt === true || dto.isAwg === true) {
+                const kind: TSidecarHostKind = dto.isAwg === true ? 'awg' : 'qwdtt';
                 if (!nodes || nodes.length !== 1) {
-                    return fail(ERRORS.QWDTT_HOST_NODE_REQUIRED);
+                    return fail(sidecarHostNodeError(kind));
                 }
                 if (dto.address !== undefined && addressIsPrivate(dto.address, dto.port)) {
-                    return fail(ERRORS.QWDTT_HOST_PRIVATE_PEER);
+                    return fail(sidecarHostPrivateError(kind));
                 }
-            } else if (dto.isQwdtt === false) {
+            } else if (dto.isQwdtt === false || dto.isAwg === false) {
                 if (!inboundObj?.configProfileUuid || !inboundObj?.configProfileInboundUuid) {
                     return fail(ERRORS.CONFIG_PROFILE_INBOUND_NOT_FOUND_IN_SPECIFIED_PROFILE);
                 }
@@ -504,11 +575,18 @@ export class HostsService {
                 if (dto.address !== undefined && addressIsPrivate(dto.address, dto.port)) {
                     return fail(ERRORS.QWDTT_HOST_PRIVATE_PEER);
                 }
+            } else if (existingHosts.some((host) => host.isAwg)) {
+                if (nodes !== undefined && nodes.length !== 1) {
+                    return fail(ERRORS.AWG_HOST_NODE_REQUIRED);
+                }
+                if (dto.address !== undefined && addressIsPrivate(dto.address, dto.port)) {
+                    return fail(ERRORS.AWG_HOST_PRIVATE_PEER);
+                }
             }
 
             let configProfileUuid: string | null | undefined;
             let configProfileInboundUuid: string | null | undefined;
-            if (dto.isQwdtt === true) {
+            if (dto.isQwdtt === true || dto.isAwg === true) {
                 configProfileUuid = null;
                 configProfileInboundUuid = null;
             } else if (inboundObj) {

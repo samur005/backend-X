@@ -27,6 +27,7 @@ export const HostsSchema = z.object({
         configProfileInboundUuid: z.uuid().nullable(),
     }),
     isQwdtt: z.boolean().default(false),
+    isAwg: z.boolean().default(false),
 
     serverDescription: z.string().max(30).nullable(),
     tags: z.array(z.string()).default([]),

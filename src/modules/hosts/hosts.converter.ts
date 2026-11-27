@@ -43,6 +43,7 @@ const entityToModel = (entity: HostsEntity): Hosts => {
         configProfileUuid: entity.configProfileUuid,
         configProfileInboundUuid: entity.configProfileInboundUuid,
         isQwdtt: entity.isQwdtt,
+        isAwg: entity.isAwg,
 
         vlessRouteId: entity.vlessRouteId,
 

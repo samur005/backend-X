@@ -8,6 +8,7 @@ export class GetInternalSquadByUuidResponseModel {
     public readonly name: string;
     public readonly tags: string[];
     public readonly includeQwdtt: boolean;
+    public readonly includeAwg: boolean;
     public readonly info: {
         membersCount: number;
         inboundsCount: number;
@@ -23,6 +24,7 @@ export class GetInternalSquadByUuidResponseModel {
         this.name = entity.name;
         this.tags = entity.tags;
         this.includeQwdtt = Boolean(entity.includeQwdtt);
+        this.includeAwg = Boolean(entity.includeAwg);
         this.info = {
             membersCount: Number(entity.membersCount),
             inboundsCount: Number(entity.inboundsCount),

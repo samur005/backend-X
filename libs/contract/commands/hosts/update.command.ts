@@ -32,6 +32,7 @@ export namespace UpdateHostCommand {
             })
             .optional(),
         isQwdtt: z.boolean().optional(),
+        isAwg: z.boolean().optional(),
         remark: z.string().min(1).max(100).optional(),
         address: z.string().optional(),
         port: z.int().optional(),

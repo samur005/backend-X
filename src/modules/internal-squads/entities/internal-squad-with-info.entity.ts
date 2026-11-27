@@ -8,6 +8,7 @@ export class InternalSquadWithInfoEntity implements InternalSquads {
     public name: string;
     public tags: string[];
     public includeQwdtt: boolean;
+    public includeAwg: boolean;
 
     public membersCount: number | string | bigint | null;
     public inboundsCount: number | string | bigint | null;
@@ -23,6 +24,7 @@ export class InternalSquadWithInfoEntity implements InternalSquads {
         this.membersCount = Number(this.membersCount) || 0;
         this.inboundsCount = Number(this.inboundsCount) || 0;
         this.includeQwdtt = Boolean(this.includeQwdtt);
+        this.includeAwg = Boolean(this.includeAwg);
 
         return this;
     }
