@@ -77,6 +77,7 @@ model Users {
   torrentBlockerReports          TorrentBlockerReports[]
   traffic                        UserTraffic?
   qwdttAccess                    QwdttUsers?
+  awgPeers                       AwgPeers[]
 
   externalSquad ExternalSquads? @relation(fields: [externalSquadUuid], references: [uuid], onDelete: SetNull)
 
@@ -211,6 +212,7 @@ model Nodes {
   connectedUsers               UserTraffic[]
   nodeMetas                    NodeMeta[]
   torrentBlockerReports        TorrentBlockerReports[]
+  awgInstance                  AwgInstances?
 
   activeConfigProfile ConfigProfiles? @relation(fields: [activeConfigProfileUuid], references: [uuid], onDelete: SetNull)
   provider            InfraProviders? @relation(fields: [providerUuid], references: [uuid], onDelete: SetNull)
@@ -308,6 +310,9 @@ model Hosts {
   // qWDTT is not an Xray inbound. A host with this flag is a subscription face
   // (remark/location + public peer) bound to a node via HostsToNodes.
   isQwdtt Boolean @default(false) @map("is_qwdtt")
+  // AWG is also not an Xray inbound. Same subscription-face pattern as isQwdtt.
+  // Client private keys must not be stored on the host (they live on awg_peers).
+  isAwg Boolean @default(false) @map("is_awg")
 
   configProfileInbounds ConfigProfileInbounds? @relation(fields: [configProfileInboundUuid], references: [uuid], onDelete: SetNull)
   configProfiles        ConfigProfiles?        @relation(fields: [configProfileUuid], references: [uuid], onDelete: SetNull)
@@ -390,6 +395,7 @@ model InternalSquads {
   name         String   @unique @map("name")
   tags         String[] @default([]) @map("tags")
   includeQwdtt Boolean  @default(false) @map("include_qwdtt")
+  includeAwg   Boolean  @default(false) @map("include_awg")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
@@ -726,4 +732,115 @@ model QwdttUsers {
   user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("qwdtt_users")
+}
+
+model AwgSettings {
+  id Int @id @default(1)
+
+  enabled Boolean @default(false)
+  remark  String  @default("AmneziaWG")
+
+  // Global default AmneziaWG generation. Per-instance version may differ.
+  defaultVersion String @default("2.0") @map("default_version")
+
+  dns        String @default("1.1.1.1, 8.8.8.8")
+  keepalive  Int    @default(25)
+  allowedIps String @default("0.0.0.0/0, ::/0") @map("allowed_ips")
+  // 0 = automatic (3s-ui EffectiveMTU).
+  mtu        Int    @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("awg_settings")
+}
+
+// One AmneziaWG server per node in v1. Fields follow 3s-ui wgserver.Config
+// and Obfuscation (samur005/3s-ui, GPL-3.0). Combined work is AGPL-3.0-only.
+model AwgInstances {
+  uuid String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  nodeUuid String @unique @map("node_uuid") @db.Uuid
+
+  listenPort Int    @default(51820) @map("listen_port")
+  listen     String @default("::")
+
+  subnet     String
+  privateKey String @map("private_key")
+  publicKey  String @map("public_key")
+
+  mtu        Int    @default(0)
+  dns        String @default("1.1.1.1, 8.8.8.8")
+  keepalive  Int    @default(25)
+  allowedIps String @default("0.0.0.0/0, ::/0") @map("allowed_ips")
+  endpoint   String @default("")
+  version    String @default("2.0")
+
+  jc   Int @default(0)
+  jmin Int @default(0)
+  jmax Int @default(0)
+  s1   Int @default(0)
+  s2   Int @default(0)
+  s3   Int @default(0)
+  s4   Int @default(0)
+
+  h1 String @default("")
+  h2 String @default("")
+  h3 String @default("")
+  h4 String @default("")
+
+  i1 String @default("")
+  i2 String @default("")
+  i3 String @default("")
+  i4 String @default("")
+  i5 String @default("")
+
+  headerProtectionKey    String @default("") @map("header_protection_key")
+  contentPaddingAddition String @default("") @map("content_padding_addition")
+  rekeyAfterTime         String @default("") @map("rekey_after_time")
+  rekeyTimeout           String @default("") @map("rekey_timeout")
+  rejectAfterTime        String @default("") @map("reject_after_time")
+  keepaliveTimeout       String @default("") @map("keepalive_timeout")
+  maxHandshakeAttempts   String @default("") @map("max_handshake_attempts")
+
+  randomTrailers Boolean @default(false) @map("random_trailers")
+  disableCookies Boolean @default(false) @map("disable_cookies")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  node  Nodes      @relation(fields: [nodeUuid], references: [uuid], onDelete: Cascade)
+  peers AwgPeers[]
+
+  @@map("awg_instances")
+}
+
+// Per-user peer on an instance. Detach keeps the row (bound=false);
+// deleting the user cascades. Client private keys stay here, never on hosts.
+model AwgPeers {
+  uuid String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  instanceUuid String @map("instance_uuid") @db.Uuid
+  userId       BigInt @map("user_id")
+
+  enabled          Boolean @default(true)
+  bound            Boolean @default(true)
+  grantedManually  Boolean @default(true) @map("granted_manually")
+
+  privateKey   String @map("private_key")
+  publicKey    String @map("public_key")
+  presharedKey String @default("") @map("preshared_key")
+  // IPv4 tunnel address without a prefix length, as in 3s-ui WgPeer.
+  address      String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  instance AwgInstances @relation(fields: [instanceUuid], references: [uuid], onDelete: Cascade)
+  user     Users        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceUuid, userId])
+  @@unique([instanceUuid, address])
+  @@index([userId])
+  @@map("awg_peers")
 }

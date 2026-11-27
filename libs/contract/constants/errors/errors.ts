@@ -226,6 +226,21 @@ export const ERRORS = {
         message: 'A qWDTT host must use a public peer address, not a private or local address',
         httpCode: 400,
     },
+    AWG_HOST_NODE_REQUIRED: {
+        code: 'A044A',
+        message: 'An AWG host must be bound to exactly one node',
+        httpCode: 400,
+    },
+    AWG_HOST_PRIVATE_PEER: {
+        code: 'A044B',
+        message: 'An AWG host must use a public peer address, not a private or local address',
+        httpCode: 400,
+    },
+    HOST_SIDECAR_TYPE_CONFLICT: {
+        code: 'A044C',
+        message: 'A host cannot be both qWDTT and AWG',
+        httpCode: 400,
+    },
     HOST_REMARK_ALREADY_EXISTS: {
         code: 'A045',
         message: 'Host remark already exists',

@@ -26,6 +26,7 @@ export namespace CreateInternalSquadCommand {
             ),
         inbounds: z.array(z.uuid()),
         includeQwdtt: z.boolean().optional(),
+        includeAwg: z.boolean().optional(),
     });
 
     export const ResponseSchema = z.object({

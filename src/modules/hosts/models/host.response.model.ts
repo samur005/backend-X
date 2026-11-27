@@ -47,6 +47,7 @@ export class HostResponseModel {
     };
 
     public isQwdtt: boolean;
+    public isAwg: boolean;
 
     public nodes: string[];
 
@@ -97,6 +98,7 @@ export class HostResponseModel {
             configProfileInboundUuid: data.configProfileInboundUuid,
         };
         this.isQwdtt = Boolean(data.isQwdtt);
+        this.isAwg = Boolean(data.isAwg);
 
         this.nodes = data.nodes.map((node) => node.nodeUuid);
         this.internalSquads = {
